@@ -298,6 +298,63 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
 
 ---
 
+## Custom Brand Themes
+
+### 13. Sinochem Signature
+
+**Vibe:** Trustworthy, clean, institutional, corporate-grade (financial/insurance aesthetic)
+
+**Layout:** Pure white canvas with generous whitespace. Logo watermark top-left, page index bottom-right, brand-green accent rule beneath every heading. Strict two-column or single-column layouts — never decorative splits.
+
+**Typography:**
+- Display: `Noto Sans SC` (700) + `Manrope` (700/800) for English fallback
+- Body: `Noto Sans SC` (400/500) + `Manrope` (400/500)
+- Numbers/Stats: `Manrope` (800) — always in brand green or navy
+
+**Colors:**
+```css
+:root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7f9f8;      /* Near-white tint for content blocks */
+    --brand-green: #00A758;       /* Primary brand color */
+    --brand-green-dark: #007a3e;  /* Hover / pressed states */
+    --brand-green-soft: #e6f5ed;  /* Callout / tag backgrounds */
+    --accent-navy: #1e3a5f;       /* Secondary accent from logo "30" */
+    --text-primary: #0f1a13;
+    --text-secondary: #5a6b60;
+    --divider: #e5ebe7;
+}
+```
+
+**Signature Elements:**
+- **Brand accent rule** beneath every heading: 48px green bar (`width: clamp(40px, 4vw, 64px); height: 3px; background: var(--brand-green);`)
+- **Logo watermark** at top-left of every slide (`max-height: clamp(28px, 4vh, 44px)`) — use direct file path `assets/logo.png`
+- **Page index** at bottom-right in small Manrope mono-spaced digits: `01 / 12` with divider in brand green
+- **Stat emphasis**: large numbers always in `--brand-green` or `--accent-navy`, body text stays dark
+- **Callout pills** with `--brand-green-soft` background + `--brand-green-dark` text
+- **Hairline dividers** at `1px solid var(--divider)` — no heavy borders, no drop shadows
+- **Entrance animation**: subtle 0.4s fade-up (translateY 12px) — NEVER bouncy or playful
+- **No gradients**, **no glassmorphism**, **no decorative shapes** — this style's power is in restraint
+
+**Required Font Loading:**
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+```
+
+**When to use this preset:**
+- 中宏保险内部分享、客户路演、合规培训
+- 任何以"专业 / 值得信赖 / 稳健"为主旋律的品牌演示
+- 需要中英文混排的企业级场景
+
+**When NOT to use:**
+- 产品创意发布（不够张扬）
+- 面向消费者的营销内容（不够亲和）
+- 技术黑客马拉松风格（不够极客）
+
+---
+
 ## Font Pairing Quick Reference
 
 | Preset | Display Font | Body Font | Source |
@@ -312,6 +369,7 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
 | Vintage Editorial | Fraunces | Work Sans | Google |
 | Neon Cyber | Clash Display | Satoshi | Fontshare |
 | Terminal Green | JetBrains Mono | JetBrains Mono | JetBrains |
+| Sinochem Signature | Noto Sans SC + Manrope | Noto Sans SC + Manrope | Google |
 
 ---
 

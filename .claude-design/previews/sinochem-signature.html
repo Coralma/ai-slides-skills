@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sinochem Signature — Style Preview</title>
+
+<!-- 企业级中英文字体组合：思源黑体 + Manrope -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+
+<style>
+  /* ============ THEME TOKENS ============ */
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7f9f8;
+    --brand-green: #00A758;
+    --brand-green-dark: #007a3e;
+    --brand-green-soft: #e6f5ed;
+    --accent-navy: #1e3a5f;
+    --text-primary: #0f1a13;
+    --text-secondary: #5a6b60;
+    --divider: #e5ebe7;
+
+    --font-display: "Noto Sans SC", "Manrope", sans-serif;
+    --font-body: "Noto Sans SC", "Manrope", sans-serif;
+    --font-num: "Manrope", sans-serif;
+
+    --title-size: clamp(2rem, 5.2vw, 4.5rem);
+    --subtitle-size: clamp(1rem, 1.8vw, 1.35rem);
+    --body-size: clamp(0.85rem, 1.2vw, 1.05rem);
+    --meta-size: clamp(0.7rem, 1vw, 0.875rem);
+
+    --slide-padding: clamp(2rem, 5vw, 5rem);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+
+  body {
+    font-family: var(--font-body);
+    color: var(--text-primary);
+    background: var(--bg-primary);
+  }
+
+  /* ============ SLIDE ============ */
+  .slide {
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+    padding: var(--slide-padding);
+    position: relative;
+    background: var(--bg-primary);
+  }
+
+  /* ============ HEADER: LOGO + META ============ */
+  .slide-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-num);
+    font-size: var(--meta-size);
+    color: var(--text-secondary);
+    letter-spacing: 0.08em;
+  }
+
+  .logo-mark {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  .logo-mark img {
+    max-height: clamp(28px, 4vh, 44px);
+    width: auto;
+  }
+
+  .slide-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .slide-meta .label { color: var(--text-secondary); }
+  .slide-meta .dot { color: var(--brand-green); font-weight: 800; }
+
+  /* ============ MAIN CONTENT ============ */
+  .slide-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: clamp(1rem, 2vw, 1.75rem);
+    max-width: 1100px;
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-family: var(--font-num);
+    font-size: var(--meta-size);
+    font-weight: 600;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--brand-green-dark);
+    padding: 0.4rem 0.9rem;
+    background: var(--brand-green-soft);
+    border-radius: 999px;
+    width: fit-content;
+  }
+
+  .eyebrow::before {
+    content: "";
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--brand-green);
+  }
+
+  h1.title {
+    font-family: var(--font-display);
+    font-size: var(--title-size);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+  }
+
+  h1.title .accent { color: var(--brand-green); }
+
+  /* 签名元素：标题下方的品牌绿短横线 */
+  .accent-rule {
+    width: clamp(40px, 4vw, 64px);
+    height: 3px;
+    background: var(--brand-green);
+    margin-top: 0.5rem;
+  }
+
+  .subtitle {
+    font-size: var(--subtitle-size);
+    color: var(--text-secondary);
+    line-height: 1.55;
+    max-width: 640px;
+    font-weight: 400;
+  }
+
+  /* ============ STATS ROW ============ */
+  .stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: clamp(1rem, 3vw, 2.5rem);
+    padding-top: clamp(1rem, 2vw, 1.5rem);
+    border-top: 1px solid var(--divider);
+    margin-top: clamp(0.5rem, 1vw, 1rem);
+  }
+
+  .stat .num {
+    font-family: var(--font-num);
+    font-weight: 800;
+    font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+    color: var(--brand-green);
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+
+  .stat .num .unit {
+    font-size: 0.55em;
+    color: var(--accent-navy);
+    margin-left: 0.25rem;
+    font-weight: 700;
+  }
+
+  .stat .label {
+    margin-top: 0.5rem;
+    font-size: var(--meta-size);
+    color: var(--text-secondary);
+    letter-spacing: 0.05em;
+  }
+
+  /* ============ FOOTER ============ */
+  .slide-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-num);
+    font-size: var(--meta-size);
+    color: var(--text-secondary);
+    border-top: 1px solid var(--divider);
+    padding-top: clamp(0.75rem, 1.5vw, 1.25rem);
+  }
+
+  .footer-left {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .footer-left .bar {
+    width: 16px;
+    height: 2px;
+    background: var(--brand-green);
+  }
+
+  .page-index {
+    font-weight: 700;
+    letter-spacing: 0.1em;
+  }
+
+  .page-index .sep {
+    color: var(--brand-green);
+    margin: 0 0.25rem;
+  }
+
+  /* ============ ANIMATIONS ============ */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .slide-body > * {
+    animation: fadeUp 0.4s var(--ease-out) both;
+  }
+  .slide-body > *:nth-child(1) { animation-delay: 0.1s; }
+  .slide-body > *:nth-child(2) { animation-delay: 0.2s; }
+  .slide-body > *:nth-child(3) { animation-delay: 0.3s; }
+  .slide-body > *:nth-child(4) { animation-delay: 0.4s; }
+  .slide-body > *:nth-child(5) { animation-delay: 0.5s; }
+</style>
+</head>
+<body>
+  <div class="slide">
+    <!-- HEADER -->
+    <header class="slide-header">
+      <div class="logo-mark">
+        <img src="../../assets/logo.png" alt="中宏保险 30 周年" />
+      </div>
+      <div class="slide-meta">
+        <span class="label">品牌预设预览</span>
+        <span class="dot">●</span>
+        <span class="label">Sinochem Signature</span>
+      </div>
+    </header>
+
+    <!-- BODY -->
+    <main class="slide-body">
+      <div class="eyebrow">Manulife-Sinochem · 30th Anniversary</div>
+      <h1 class="title">值得信赖的<span class="accent">专业力量</span></h1>
+      <div class="accent-rule"></div>
+      <p class="subtitle">
+        Sinochem Signature 品牌预设 — 以克制、干净、值得信赖为核心气质，
+        服务于中宏保险企业级演示场景。纯白画布 + 品牌绿强调 + 思源黑体排版。
+      </p>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="num">30<span class="unit">年</span></div>
+          <div class="label">深耕中国市场</div>
+        </div>
+        <div class="stat">
+          <div class="num">500<span class="unit">万+</span></div>
+          <div class="label">服务客户</div>
+        </div>
+        <div class="stat">
+          <div class="num">98.7<span class="unit">%</span></div>
+          <div class="label">客户满意度</div>
+        </div>
+      </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="slide-footer">
+      <div class="footer-left">
+        <span class="bar"></span>
+        <span>中宏保险 · 内部演示</span>
+      </div>
+      <div class="page-index">01<span class="sep">/</span>12</div>
+    </footer>
+  </div>
+</body>
+</html>
