@@ -15,6 +15,31 @@ import sys
 from pptx import Presentation
 
 
+def extract_text_from_frame(text_frame):
+    """
+    Extract text from a text frame by processing paragraphs individually.
+    Joins runs within each paragraph into a single line, and separates
+    paragraphs with newlines. This avoids spurious newlines from <a:br/>
+    that python-pptx's default text property would include.
+    """
+    paragraphs = []
+    for paragraph in text_frame.paragraphs:
+        para_text = "".join(run.text for run in paragraph.runs)
+        para_text = para_text.strip()
+        if para_text:
+            paragraphs.append(para_text)
+    return "\n".join(paragraphs)
+
+
+def extract_text_from_shape(shape):
+    """
+    Extract text from a shape by delegating to extract_text_from_frame.
+    """
+    if not shape.has_text_frame:
+        return ""
+    return extract_text_from_frame(shape.text_frame)
+
+
 def extract_pptx(file_path, output_dir="."):
     """
     Extract all content from a PowerPoint file.
@@ -39,7 +64,7 @@ def extract_pptx(file_path, output_dir="."):
         # Collect title shape id to avoid duplicating it in content
         title_shape_id = None
         if slide.shapes.title is not None:
-            slide_data["title"] = slide.shapes.title.text
+            slide_data["title"] = extract_text_from_shape(slide.shapes.title)
             title_shape_id = slide.shapes.title.shape_id
 
         for shape in slide.shapes:
@@ -47,10 +72,10 @@ def extract_pptx(file_path, output_dir="."):
             if shape.has_text_frame:
                 if shape.shape_id == title_shape_id:
                     continue
-                text = shape.text.strip()
+                text = extract_text_from_shape(shape)
                 if text:
                     slide_data["content"].append(
-                        {"type": "text", "content": shape.text}
+                        {"type": "text", "content": text}
                     )
 
             # Extract images
@@ -75,7 +100,7 @@ def extract_pptx(file_path, output_dir="."):
         # Extract speaker notes
         if slide.has_notes_slide:
             notes_frame = slide.notes_slide.notes_text_frame
-            slide_data["notes"] = notes_frame.text
+            slide_data["notes"] = extract_text_from_frame(notes_frame)
 
         slides_data.append(slide_data)
 
