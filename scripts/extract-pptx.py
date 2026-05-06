@@ -36,12 +36,19 @@ def extract_pptx(file_path, output_dir="."):
             "notes": "",
         }
 
+        # Collect title shape id to avoid duplicating it in content
+        title_shape_id = None
+        if slide.shapes.title is not None:
+            slide_data["title"] = slide.shapes.title.text
+            title_shape_id = slide.shapes.title.shape_id
+
         for shape in slide.shapes:
-            # Extract text content
+            # Extract text content (skip the title shape)
             if shape.has_text_frame:
-                if shape == slide.shapes.title:
-                    slide_data["title"] = shape.text
-                else:
+                if shape.shape_id == title_shape_id:
+                    continue
+                text = shape.text.strip()
+                if text:
                     slide_data["content"].append(
                         {"type": "text", "content": shape.text}
                     )
