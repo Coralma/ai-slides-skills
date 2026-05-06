@@ -328,7 +328,11 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
 
 **Signature Elements:**
 - **Brand accent rule** beneath every heading: 48px green bar (`width: clamp(40px, 4vw, 64px); height: 3px; background: var(--brand-green);`)
-- **Logo watermark** at top-left of every slide (`max-height: clamp(28px, 4vh, 44px)`) — use direct file path `assets/logo.png`
+- **Logo watermark** at top-left of every slide (`max-height: clamp(28px, 4vh, 44px)`) — **MUST embed as base64 data URI** (do NOT use relative file paths — they break when HTML is generated in a different directory). Read the complete base64 string from `assets/logo-base64.txt` and use this exact img tag:
+  ```html
+  <img src="data:image/jpeg;base64,{CONTENTS_OF_assets/logo-base64.txt}" alt="中宏保险" style="max-height: clamp(28px, 4vh, 44px); width: auto;" />
+  ```
+  The file `assets/logo-base64.txt` contains the full base64 encoding of the logo (JPEG format, ~167KB). Always inline the complete data URI in generated HTML.
 - **Page index** at bottom-right in small Manrope mono-spaced digits: `01 / 12` with divider in brand green
 - **Stat emphasis**: large numbers always in `--brand-green` or `--accent-navy`, body text stays dark
 - **Callout pills** with `--brand-green-soft` background + `--brand-green-dark` text
