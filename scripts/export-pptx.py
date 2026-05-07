@@ -220,18 +220,45 @@ COLLECT_JS = r"""
             x2 = Math.max(x2, r.right); y2 = Math.max(y2, r.bottom);
         }
 
-        // Use the parent element's bounding rect width as minimum width.
-        // The tight text range is often narrower than the container, causing
-        // PPTX text to wrap due to slight font metric differences.
-        const parentRect = parent.getBoundingClientRect();
-        const parentW = parentRect.width;
+        // Walk up to nearest block-level ancestor for a better container width.
+        // Inline elements (span, a, em, strong, etc.) often have the same width
+        // as their text content, which is too tight for PPTX font metrics.
+        let container = parent;
+        const inlineTags = new Set(['SPAN','A','EM','STRONG','B','I','U','S','MARK','SMALL','SUB','SUP','LABEL','CODE']);
+        while (container && container !== slide) {
+            const cStyle = getComputedStyle(container);
+            const cDisplay = cStyle.display;
+            if (cDisplay === 'block' || cDisplay === 'flex' || cDisplay === 'grid' ||
+                cDisplay === 'list-item' || cDisplay === 'table-cell' ||
+                (!inlineTags.has(container.tagName) && cDisplay !== 'inline' && cDisplay !== 'inline-block')) {
+                break;
+            }
+            container = container.parentElement;
+        }
+        if (!container || container === slide) container = parent;
+        const containerRect = container.getBoundingClientRect();
+        // Use alignment-aware width: extend box to container boundaries
+        // so that proportionally-scaled fonts have enough room.
+        const textAlign = style.textAlign;
+        const containerRight = containerRect.right;
         const textW = x2 - x1;
-        // Use parent width when text is positioned near parent's left edge
-        // (i.e. text starts within the parent's horizontal bounds)
-        const useParentW = (x1 >= parentRect.left - 2) && (parentW > textW);
-        const finalW = useParentW ? parentW : textW;
-        // Keep x relative to parent if using parent width
-        const finalX = useParentW ? (parentRect.left - sRect.left) : (x1 - sRect.left);
+        let finalW, finalX;
+
+        if (textAlign === 'center') {
+            // Center-aligned: use full container width, position at container left
+            finalW = containerRect.width;
+            finalX = containerRect.left - sRect.left;
+        } else if (textAlign === 'right' || textAlign === 'end') {
+            // Right-aligned: extend from container left to text right edge
+            finalW = x2 - containerRect.left;
+            finalX = containerRect.left - sRect.left;
+        } else {
+            // Left-aligned (default): extend from text start to container right
+            finalW = containerRight - x1;
+            finalX = x1 - sRect.left;
+        }
+        // Ensure minimum width is at least the text width + small buffer
+        finalW = Math.max(finalW, textW + 10);
 
         const rect = { x: finalX, y: y1-sRect.top, w: finalW, h: y2-y1 };
         if (rect.w < 1 || rect.h < 1) continue;
@@ -498,10 +525,15 @@ def build_text(item: dict, ctx: Ctx):
     # the renderer still wraps onto one extra line.
     font_px   = float(item.get("fontSize") or 16)
     num_lines = int(item.get("numLines", 1) or 1)
-    # Use generous horizontal padding: 2.5 character widths to absorb
+    # Use very generous horizontal padding: 3.5 character widths to absorb
     # CJK font metric differences between Chrome and PowerPoint.
-    pad_w_px  = max(24.0, font_px * 2.5)
-    pad_h_px  = max(6.0,  font_px * 0.5 * max(1, num_lines))
+    # gen_pptx.py uses widths like Inches(10) for headings on a 13.33" slide,
+    # leaving ample room. We replicate that generosity here.
+    # Moderate padding to absorb Chrome vs PowerPoint font metric differences.
+    # With viewport-scaled font sizes, boxes are proportionally correct;
+    # we only need ~10% extra width and a small height buffer.
+    pad_w_px  = max(12.0, font_px * 0.8)
+    pad_h_px  = max(4.0,  font_px * 0.3 * max(1, num_lines))
     pad_w_emu = _px2emu(pad_w_px, ctx.vp_w, ctx.slide_w_emu)
     pad_h_emu = _px2emu(pad_h_px, ctx.vp_h, ctx.slide_h_emu)
     width  += pad_w_emu
@@ -512,12 +544,14 @@ def build_text(item: dict, ctx: Ctx):
     tf.margin_left = tf.margin_right = 0
     tf.margin_top = tf.margin_bottom = 0
 
-    # Single-line text in the browser must never wrap in PPTX, regardless
-    # of minute font-metric differences. Multi-line text keeps word_wrap
-    # so that explicit line breaks and reflow behave naturally.
-    tf.word_wrap = (num_lines > 1)
+    # Always enable word_wrap like gen_pptx.py does — this prevents text
+    # from overflowing invisibly when the box is slightly too narrow.
+    tf.word_wrap = True
 
-    # Font-size: CSS px → Pt, scaled to PPTX coordinate space
+    # Font-size: CSS px → Pt, scaled to PPTX coordinate space.
+    # Since positions/dimensions are proportionally mapped from viewport to slide
+    # (via _px2emu), font sizes must use the same proportional scaling so that
+    # text fits correctly within its mapped bounding box.
     size_px = font_px
     pt_size = size_px * 72.0 / 96.0 * (SLIDE_W_IN * 96.0 / ctx.vp_w)
     pt_size = max(1.0, pt_size)
@@ -628,9 +662,24 @@ def build_shape(item: dict, ctx: Ctx):
         shape.fill.solid()          # ensure fill XML element exists
         apply_gradient_fill(shape, grad)
     elif item.get("bgColor"):
-        rgb, _ = parse_color(item["bgColor"])
-        shape.fill.solid()
-        shape.fill.fore_color.rgb = rgb
+        rgb, alpha = parse_color(item["bgColor"])
+        if alpha < 0.01:
+            shape.fill.background()
+        else:
+            shape.fill.solid()
+            shape.fill.fore_color.rgb = rgb
+            if alpha < 0.99:
+                # Apply fill transparency via lxml <a:alpha> element
+                # Access the underlying XML via shape's spPr element
+                sp_pr = shape._element.spPr
+                srgb_elem = sp_pr.find(
+                    f'.//{{{_A_NS}}}solidFill/{{{_A_NS}}}srgbClr'
+                )
+                if srgb_elem is not None:
+                    alpha_elem = etree.SubElement(
+                        srgb_elem, f'{{{_A_NS}}}alpha'
+                    )
+                    alpha_elem.set('val', str(int(alpha * 100000)))
     else:
         shape.fill.background()
 
@@ -751,7 +800,7 @@ def export_pptx(html_path: Path, output: Path,
                             }
                         });
                         // Force .reveal elements to final visible state
-                        slides[idx]?.querySelectorAll('.reveal').forEach(el => {
+                        slides[idx]?.querySelectorAll('[class*="reveal"]').forEach(el => {
                             el.style.opacity = '1';
                             el.style.transform = 'none';
                             el.style.visibility = 'visible';
@@ -826,8 +875,7 @@ def export_pptx(html_path: Path, output: Path,
                 # overlapping shapes / overlapping text fragments respect
                 # their own z-index relative to peers.
                 non_text.sort(key=lambda it: (
-                    _NON_TEXT_PRIO.get(it["kind"], 5),
-                    it.get("z", 0),
+                    _NON_TEXT_PRIO.get(it["kind"], 3),
                     it.get("order", -1),
                 ))
                 text_only.sort(key=lambda it: (
