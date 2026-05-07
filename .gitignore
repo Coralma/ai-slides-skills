@@ -1,2 +1,4 @@
 /.qoder
 /scripts/__pycache__
+.DS_Store
+.claude-design/.DS_Store

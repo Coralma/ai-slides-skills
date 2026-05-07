@@ -227,16 +227,17 @@ When converting PowerPoint files:
 
 ## Phase 6: Share & Export (Optional)
 
-After delivery, **ask the user:** _"Would you like to share this presentation? I can deploy it to a live URL (works on any device including phones) or export it as a PDF."_
+After delivery, **ask the user:** _"Would you like to share this presentation? I can deploy it to a live URL, export it as a PDF, or export it as an editable PowerPoint (.pptx)."_
 
 Options:
 
 - **Deploy to URL** — Shareable link that works on any device
 - **Export to PDF** — Universal file for email, Slack, print
-- **Both**
+- **Export to PPTX** — Fully editable PowerPoint with real text, shapes, and embedded images
+- **Both (PDF + PPTX)**
 - **No thanks**
 
-If the user declines, stop here. If they choose one or both, proceed below.
+If the user declines, stop here. If they choose one or more, proceed below.
 
 ### 6A: Deploy to a Live URL (Vercel)
 
@@ -275,7 +276,40 @@ This deploys the presentation to Vercel — a free hosting platform. The link wo
 - **Filenames with spaces work but can cause issues.** The script handles spaces in filenames, but Vercel URLs encode spaces as `%20`. If possible, avoid spaces in image filenames. If the user's images have spaces, the script handles it — but if images still break, renaming files to use hyphens instead of spaces is the fix.
 - **Redeploying updates the same URL.** Running the deploy script again on the same presentation overwrites the previous deployment. The URL stays the same — no need to share a new link.
 
-### 6B: Export to PDF
+### 6B: Export to PPTX (Editable)
+
+This converts every slide into a fully editable PowerPoint deck. Every text block becomes a textbox you can edit, every image (including base64 LOGO) becomes an embedded picture shape, and backgrounds become native PPTX shapes — nothing is a screenshot.
+
+**Run the export script:**
+
+```bash
+bash scripts/export-pptx.sh <path-to-html> [output.pptx]
+```
+
+Optional flags:
+
+- `--compact` — Render at 1280×720 (faster, slightly smaller)
+
+**What it produces:**
+- All text: editable in PowerPoint (font name, size, color, alignment preserved)
+- `<img>` / base64 LOGO: embedded as real picture shapes (replaceable, resizable)
+- `<svg>` icons: rasterized to PNG via headless browser screenshot, then embedded as picture shapes
+- Div backgrounds: native PPTX rectangle / rounded-rect / gradient fill shapes
+- `linear-gradient(...)` backgrounds: native PPTX gradient fill
+- `border-radius`: PPTX rounded-rectangle with matched corner adjustment
+- `transform: rotate()`: shape.rotation preserved
+
+**Limitations (gracefully skipped):**
+- CSS animations → only the final visual state is captured
+- `clip-path` / `mask` / `backdrop-filter` → ignored (no PPTX equivalent)
+- `::before` / `::after` pseudo-elements → not yet captured
+- Web fonts: font *name* is preserved; if PowerPoint doesn't have the font installed, it falls back gracefully
+
+**⚠ First run is slow.** The script installs `python-pptx>=1.0`, `playwright`, `lxml`, `pillow` and downloads Chromium (~150 MB) on first use. Subsequent runs are fast.
+
+---
+
+### 6C: Export to PDF
 
 This captures each slide as a screenshot and combines them into a PDF. Perfect for email attachments, embedding in documents, or printing.
 
@@ -328,4 +362,5 @@ This captures each slide as a screenshot and combines them into a PDF. Perfect f
 | [animation-patterns.md](animation-patterns.md)     | CSS/JS animation snippets and effect-to-feeling guide                | Phase 3 (generation)      |
 | [scripts/extract-pptx.py](scripts/extract-pptx.py) | Python script for PPT content extraction                             | Phase 4 (conversion)      |
 | [scripts/deploy.sh](scripts/deploy.sh)             | Deploy slides to Vercel for instant sharing                          | Phase 6 (sharing)         |
-| [scripts/export-pdf.sh](scripts/export-pdf.sh)     | Export slides to PDF                                                 | Phase 6 (sharing)         |
+| [scripts/export-pptx.sh](scripts/export-pptx.sh)   | Export slides to editable PPTX (DOM → native shapes, no screenshots) | Phase 6B (PPTX export)    |
+| [scripts/export-pdf.sh](scripts/export-pdf.sh)     | Export slides to PDF                                                 | Phase 6C (PDF export)     |
