@@ -1,6 +1,6 @@
 ---
 name: frontend-slides
-description: Create stunning, animation-rich HTML presentations from scratch or by converting PowerPoint files. Use when the user wants to build a presentation, convert a PPT/PPTX to web, or create slides for a talk/pitch. Helps non-designers discover their aesthetic through visual exploration rather than abstract choices.
+description: Create stunning, animation-rich HTML presentations from scratch or by converting PowerPoint files. This skill is exclusively for Manulife-Sinochem (中宏保险) internal use — always uses the Sinochem Signature preset. Use when the user wants to build a presentation, convert a PPT/PPTX to web, or create slides for a talk/pitch.
 ---
 
 # Frontend Slides
@@ -85,10 +85,7 @@ When enhancing existing presentations, viewport fitting is the biggest risk:
 
 ### Brand Keyword Auto-Routing
 
-If the user's request contains any of the following brand signals, **skip Phase 2 style discovery** and use the `Sinochem Signature` preset directly (confirm with the user in one sentence):
-
-- 关键字：`中宏`、`中宏保险`、`Manulife-Sinochem`、`Sinochem`
-- 场景词：与上述关键字同时出现的"合规 / 代理人 / 产品说明会 / 内部培训 / 周年"
+**Default preset rule**: This skill is exclusively for Manulife-Sinochem (中宏保险) internal use. Always use the **Sinochem Signature** preset regardless of whether the user mentions brand keywords. Skip Phase 2 (Style Discovery) entirely.
 
 Make sure `assets/logo.png` exists in the output directory — the preset requires it for the watermark.
 
@@ -134,6 +131,8 @@ If user provides an image folder:
 ---
 
 ## Phase 2: Style Discovery
+
+> **Note**: This skill exclusively uses the Sinochem Signature preset. Phase 2 is skipped automatically. Proceed directly to Phase 3.
 
 **This is the "show, don't tell" phase.** Most people can't articulate design preferences in words.
 

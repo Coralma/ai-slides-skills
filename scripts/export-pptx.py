@@ -237,28 +237,15 @@ COLLECT_JS = r"""
         }
         if (!container || container === slide) container = parent;
         const containerRect = container.getBoundingClientRect();
-        // Use alignment-aware width: extend box to container boundaries
-        // so that proportionally-scaled fonts have enough room.
-        const textAlign = style.textAlign;
-        const containerRight = containerRect.right;
+        // Always use the text's actual rendered position from the browser.
+        // The browser has already computed final positions for centered/right text.
+        // Extend width to container right edge to prevent wrapping from font
+        // metric differences, but never reposition the text.
         const textW = x2 - x1;
-        let finalW, finalX;
-
-        if (textAlign === 'center') {
-            // Center-aligned: use full container width, position at container left
-            finalW = containerRect.width;
-            finalX = containerRect.left - sRect.left;
-        } else if (textAlign === 'right' || textAlign === 'end') {
-            // Right-aligned: extend from container left to text right edge
-            finalW = x2 - containerRect.left;
-            finalX = containerRect.left - sRect.left;
-        } else {
-            // Left-aligned (default): extend from text start to container right
-            finalW = containerRight - x1;
-            finalX = x1 - sRect.left;
-        }
-        // Ensure minimum width is at least the text width + small buffer
-        finalW = Math.max(finalW, textW + 10);
+        const containerRight = containerRect.right;
+        const availableW = Math.max(textW, containerRight - x1);
+        const finalW = availableW;
+        const finalX = x1 - sRect.left;
 
         const rect = { x: finalX, y: y1-sRect.top, w: finalW, h: y2-y1 };
         if (rect.w < 1 || rect.h < 1) continue;
