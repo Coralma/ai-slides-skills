@@ -219,7 +219,21 @@ COLLECT_JS = r"""
             x1 = Math.min(x1, r.left);  y1 = Math.min(y1, r.top);
             x2 = Math.max(x2, r.right); y2 = Math.max(y2, r.bottom);
         }
-        const rect = { x: x1-sRect.left, y: y1-sRect.top, w: x2-x1, h: y2-y1 };
+
+        // Use the parent element's bounding rect width as minimum width.
+        // The tight text range is often narrower than the container, causing
+        // PPTX text to wrap due to slight font metric differences.
+        const parentRect = parent.getBoundingClientRect();
+        const parentW = parentRect.width;
+        const textW = x2 - x1;
+        // Use parent width when text is positioned near parent's left edge
+        // (i.e. text starts within the parent's horizontal bounds)
+        const useParentW = (x1 >= parentRect.left - 2) && (parentW > textW);
+        const finalW = useParentW ? parentW : textW;
+        // Keep x relative to parent if using parent width
+        const finalX = useParentW ? (parentRect.left - sRect.left) : (x1 - sRect.left);
+
+        const rect = { x: finalX, y: y1-sRect.top, w: finalW, h: y2-y1 };
         if (rect.w < 1 || rect.h < 1) continue;
         if (rect.x + rect.w < -5 || rect.y + rect.h < -5 ||
             rect.x > sRect.width + 5 || rect.y > sRect.height + 5) continue;
@@ -484,8 +498,10 @@ def build_text(item: dict, ctx: Ctx):
     # the renderer still wraps onto one extra line.
     font_px   = float(item.get("fontSize") or 16)
     num_lines = int(item.get("numLines", 1) or 1)
-    pad_w_px  = max(18.0, font_px * 1.5)
-    pad_h_px  = max(4.0,  font_px * 0.4 * max(1, num_lines))
+    # Use generous horizontal padding: 2.5 character widths to absorb
+    # CJK font metric differences between Chrome and PowerPoint.
+    pad_w_px  = max(24.0, font_px * 2.5)
+    pad_h_px  = max(6.0,  font_px * 0.5 * max(1, num_lines))
     pad_w_emu = _px2emu(pad_w_px, ctx.vp_w, ctx.slide_w_emu)
     pad_h_emu = _px2emu(pad_h_px, ctx.vp_h, ctx.slide_h_emu)
     width  += pad_w_emu
