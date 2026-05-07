@@ -473,9 +473,21 @@ def build_text(item: dict, ctx: Ctx):
     # bounding box from Range.getClientRects() is often 1–3 % too tight.
     # Without extra room a single-line title like
     # “财务稳健，资源聚焦中国市场” wraps in PPTX even though it fit
-    # on one line in the browser. Pad horizontally / vertically.
-    pad_w_emu = _px2emu(18, ctx.vp_w, ctx.slide_w_emu)
-    pad_h_emu = _px2emu(4,  ctx.vp_h, ctx.slide_h_emu)
+    # on one line in the browser, and multi-line paragraphs re-wrap onto
+    # extra lines that overflow downward and overlap the next element.
+    #
+    # Pad proportionally to the font size: a flat 18 px / 4 px is plenty
+    # for body copy at 14–16 px but completely insufficient for a 60 px
+    # title (where one extra glyph alone is wider than the entire pad).
+    # Horizontal slack ≈ 1.5 character widths absorbs the metric drift,
+    # vertical slack ≈ 0.4 × font_size × num_lines reserves room in case
+    # the renderer still wraps onto one extra line.
+    font_px   = float(item.get("fontSize") or 16)
+    num_lines = int(item.get("numLines", 1) or 1)
+    pad_w_px  = max(18.0, font_px * 1.5)
+    pad_h_px  = max(4.0,  font_px * 0.4 * max(1, num_lines))
+    pad_w_emu = _px2emu(pad_w_px, ctx.vp_w, ctx.slide_w_emu)
+    pad_h_emu = _px2emu(pad_h_px, ctx.vp_h, ctx.slide_h_emu)
     width  += pad_w_emu
     height += pad_h_emu
 
@@ -487,11 +499,10 @@ def build_text(item: dict, ctx: Ctx):
     # Single-line text in the browser must never wrap in PPTX, regardless
     # of minute font-metric differences. Multi-line text keeps word_wrap
     # so that explicit line breaks and reflow behave naturally.
-    num_lines = int(item.get("numLines", 1) or 1)
     tf.word_wrap = (num_lines > 1)
 
     # Font-size: CSS px → Pt, scaled to PPTX coordinate space
-    size_px = item.get("fontSize") or 16
+    size_px = font_px
     pt_size = size_px * 72.0 / 96.0 * (SLIDE_W_IN * 96.0 / ctx.vp_w)
     pt_size = max(1.0, pt_size)
 
@@ -780,19 +791,34 @@ def export_pptx(html_path: Path, output: Path,
                                   file=sys.stderr)
 
                 # Draw order: slidebg → shape → image/svg → text.
+                #
                 # Text MUST always be drawn last so it is never covered by
-                # card backgrounds, even when the shape has a higher CSS
-                # z-index than the text inside it (e.g. `.card { z-index: 1 }`
-                # containing text with `z-index: auto`). Therefore kind
-                # priority comes BEFORE z-index in the sort key — this
-                # forces a hard layering: bg < shapes/images < text.
-                _KIND_PRIO = {"slidebg": 0, "shape": 1,
-                              "image": 2, "svg": 2, "text": 3}
-                items.sort(key=lambda it: (
-                    _KIND_PRIO.get(it["kind"], 5),
+                # card backgrounds or decorative shapes — even when the
+                # shape has a higher CSS z-index than the text inside it
+                # (e.g. `.card { z-index: 1 }` containing text with
+                # `z-index: auto`). In PPTX, draw order is determined by
+                # insertion order in the slide's spTree: the last shape
+                # added is rendered on top. We therefore split items into
+                # two passes and concatenate, guaranteeing every textbox
+                # is inserted AFTER every non-text shape regardless of any
+                # CSS z-index hint.
+                _NON_TEXT_PRIO = {"slidebg": 0, "shape": 1,
+                                  "image": 2, "svg": 2}
+                non_text = [it for it in items if it["kind"] != "text"]
+                text_only = [it for it in items if it["kind"] == "text"]
+                # Within each pass keep the natural CSS stacking order so
+                # overlapping shapes / overlapping text fragments respect
+                # their own z-index relative to peers.
+                non_text.sort(key=lambda it: (
+                    _NON_TEXT_PRIO.get(it["kind"], 5),
                     it.get("z", 0),
                     it.get("order", -1),
                 ))
+                text_only.sort(key=lambda it: (
+                    it.get("z", 0),
+                    it.get("order", -1),
+                ))
+                items = non_text + text_only
 
                 pptx_slide = prs.slides.add_slide(blank)
                 ctx = Ctx(
