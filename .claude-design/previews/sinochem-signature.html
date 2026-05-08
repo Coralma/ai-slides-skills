@@ -27,92 +27,91 @@
     --font-body: "Noto Sans SC", "Manrope", sans-serif;
     --font-num: "Manrope", sans-serif;
 
-    --title-size: clamp(1.4rem, 2.4vw, 2rem);
-    --subtitle-size: clamp(1rem, 1.8vw, 1.35rem);
-    --body-size: clamp(0.85rem, 1.2vw, 1.05rem);
-    --meta-size: clamp(0.7rem, 1vw, 0.875rem);
+    /* 所有字号用 cqw/cqh 相对 16:9 画布而非浏览器 viewport，
+       保证 PPTX 导出（1920×1080）与任何比例浏览器预览完全一致 */
+    --title-size:    clamp(1.4rem, 2.4cqw, 2rem);
+    --subtitle-size: clamp(1rem, 1.8cqw, 1.35rem);
+    --body-size:     clamp(0.85rem, 1.2cqw, 1.05rem);
+    --meta-size:     clamp(0.7rem, 1cqw, 0.875rem);
+    --slide-padding: clamp(2rem, 5cqw, 5rem);
 
-    --slide-padding: clamp(3rem, 6vw, 6rem);
     --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  html, body { height: 100%; overflow: hidden; }
 
-  body {
+  /* ============ 16:9 CANVAS LOCK（letterbox） ============
+     不再让 .slide 完全自适应浏览器；改由 .deck 容器锁定 16:9，
+     多余区域由 html/body 背景（letterbox 条）填充。PPTX 导出时
+     Chromium viewport = 1920×1080，.deck 刚好铺满，无缝一致。 */
+  html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #0f1a13;
     font-family: var(--font-body);
     color: var(--text-primary);
+  }
+
+  body {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .deck {
+    /* 永远按 16:9 等比最大化，不被浏览器宽高比扭曲 */
+    width: min(100vw, calc(100vh * 16 / 9));
+    height: min(100vh, calc(100vw * 9 / 16));
+    overflow-y: auto;
+    scroll-snap-type: y mandatory;
+    scroll-behavior: smooth;
     background: var(--bg-primary);
+    box-shadow: 0 12px 60px rgba(0, 0, 0, 0.25);
+    /* 启用容器查询：内部 cqw/cqh 相对 deck（也即 slide）而非浏览器 */
+    container-type: size;
+    container-name: deck;
   }
 
   /* ============ SLIDE ============ */
   .slide {
-    width: 100vw;
-    height: 100vh;
-    height: 100dvh;
+    width: 100%;
+    height: 100%;           /* 等于 .deck，即锁定 16:9 */
+    aspect-ratio: 16 / 9;
     overflow: hidden;
     display: grid;
+    /* 标题区 / 正文区 / 页脚 —— 标题永远置顶 */
     grid-template-rows: auto 1fr auto;
+    row-gap: clamp(1rem, 2cqw, 2rem);
     padding: var(--slide-padding);
+    padding-bottom: calc(var(--slide-padding) + clamp(40px, 6cqh, 68px));
     position: relative;
     background: var(--bg-primary);
+    scroll-snap-align: start;
   }
 
-  /* ============ HEADER: META ONLY (top-right) ============ */
+  /* ============ HEADER（标题永远在最上方） ============
+     把 eyebrow / 主标题 / 品牌绿短横线 / 副标题 全部放进 grid row 1，
+     采用 column flex，不做任何垂直居中 —— 保证无论内容多少都贴顶。 */
   .slide-header {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.5rem, 1cqw, 1rem);
+    align-items: flex-start;
+  }
+
+  .meta-row {
     display: flex;
     justify-content: flex-end;
     align-items: center;
+    width: 100%;
     font-family: var(--font-num);
     font-size: var(--meta-size);
     color: var(--text-secondary);
     letter-spacing: 0.08em;
-    min-height: 0;
+    margin-bottom: clamp(0.5rem, 1cqw, 1rem);
   }
-
-  .logo-bottom {
-    position: absolute;
-    left: var(--slide-padding);
-    bottom: var(--slide-padding);
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    background: #ffffff;
-    padding: 0.4rem 0.6rem;
-    border-radius: 4px;
-    z-index: 10;
-  }
-
-  .logo-bottom img {
-    max-height: clamp(24px, 3.5vh, 38px);
-    width: auto;
-  }
-
-  .logo-bottom .company-name {
-    color: #00A758;
-    font-family: 'Noto Sans SC', sans-serif;
-    font-weight: 700;
-    font-size: clamp(12px, 1.8vh, 19px);
-    white-space: nowrap;
-  }
-
-  .slide-meta {
-    display: flex;
-    align-items: center;
-    gap: 0.75rem;
-  }
-
-  .slide-meta .label { color: var(--text-secondary); }
-  .slide-meta .dot { color: var(--brand-green); font-weight: 800; }
-
-  /* ============ MAIN CONTENT ============ */
-  .slide-body {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    gap: clamp(1rem, 2vw, 1.75rem);
-    max-width: 1100px;
-  }
+  .meta-row .dot { color: var(--brand-green); font-weight: 800; margin: 0 0.5rem; }
 
   .eyebrow {
     display: inline-flex;
@@ -127,9 +126,7 @@
     padding: 0.4rem 0.9rem;
     background: var(--brand-green-soft);
     border-radius: 999px;
-    width: fit-content;
   }
-
   .eyebrow::before {
     content: "";
     width: 6px; height: 6px;
@@ -145,15 +142,13 @@
     letter-spacing: -0.02em;
     color: var(--text-primary);
   }
-
   h1.title .accent { color: var(--brand-green); }
 
   /* 签名元素：标题下方的品牌绿短横线 */
   .accent-rule {
-    width: clamp(40px, 4vw, 64px);
+    width: clamp(40px, 4cqw, 64px);
     height: 3px;
     background: var(--brand-green);
-    margin-top: 0.5rem;
   }
 
   .subtitle {
@@ -164,32 +159,38 @@
     font-weight: 400;
   }
 
+  /* ============ MAIN CONTENT ============ */
+  .slide-body {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;   /* 从顶部排起，不再居中 */
+    gap: clamp(1rem, 2cqw, 1.75rem);
+    overflow: hidden;
+  }
+
   /* ============ STATS ROW ============ */
   .stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: clamp(1rem, 3vw, 2.5rem);
-    padding-top: clamp(1rem, 2vw, 1.5rem);
+    gap: clamp(1rem, 3cqw, 2.5rem);
+    padding-top: clamp(1rem, 2cqw, 1.5rem);
     border-top: 1px solid var(--divider);
-    margin-top: clamp(0.5rem, 1vw, 1rem);
   }
 
   .stat .num {
     font-family: var(--font-num);
     font-weight: 800;
-    font-size: clamp(1.75rem, 3.5vw, 2.75rem);
+    font-size: clamp(1.75rem, 3.5cqw, 2.75rem);
     color: var(--brand-green);
     line-height: 1;
     letter-spacing: -0.02em;
   }
-
   .stat .num .unit {
     font-size: 0.55em;
     color: var(--accent-navy);
     margin-left: 0.25rem;
     font-weight: 700;
   }
-
   .stat .label {
     margin-top: 0.5rem;
     font-size: var(--meta-size);
@@ -200,103 +201,96 @@
   /* ============ FOOTER ============ */
   .slide-footer {
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-end;
     align-items: center;
     font-family: var(--font-num);
     font-size: var(--meta-size);
     color: var(--text-secondary);
     border-top: 1px solid var(--divider);
-    padding-top: clamp(0.75rem, 1.5vw, 1.25rem);
+    padding-top: clamp(0.75rem, 1.5cqw, 1.25rem);
   }
+  .page-index { font-weight: 700; letter-spacing: 0.1em; }
+  .page-index .sep { color: var(--brand-green); margin: 0 0.25rem; }
 
-  .footer-left {
+  /* ============ LOGO WATERMARK（底部左侧） ============ */
+  .logo-bottom {
+    position: absolute;
+    left: var(--slide-padding);
+    bottom: var(--slide-padding);
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    z-index: 10;
   }
-
-  .footer-left .bar {
-    width: 16px;
-    height: 2px;
-    background: var(--brand-green);
+  .logo-bottom img {
+    max-height: clamp(24px, 3.5cqh, 38px);
+    width: auto;
   }
-
-  .page-index {
-    font-weight: 700;
-    letter-spacing: 0.1em;
-  }
-
-  .page-index .sep {
+  .logo-bottom .company-name {
     color: var(--brand-green);
-    margin: 0 0.25rem;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-weight: 700;
+    font-size: clamp(12px, 1.8cqh, 19px);
+    white-space: nowrap;
   }
 
   /* ============ ANIMATIONS ============ */
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(12px); }
-    to { opacity: 1; transform: translateY(0); }
+    to   { opacity: 1; transform: translateY(0); }
   }
-
-  .slide-body > * {
+  .slide-header > *, .slide-body > * {
     animation: fadeUp 0.4s var(--ease-out) both;
   }
-  .slide-body > *:nth-child(1) { animation-delay: 0.1s; }
-  .slide-body > *:nth-child(2) { animation-delay: 0.2s; }
-  .slide-body > *:nth-child(3) { animation-delay: 0.3s; }
-  .slide-body > *:nth-child(4) { animation-delay: 0.4s; }
-  .slide-body > *:nth-child(5) { animation-delay: 0.5s; }
+  .slide-header > *:nth-child(1) { animation-delay: 0.05s; }
+  .slide-header > *:nth-child(2) { animation-delay: 0.15s; }
+  .slide-header > *:nth-child(3) { animation-delay: 0.25s; }
+  .slide-header > *:nth-child(4) { animation-delay: 0.35s; }
+  .slide-body   > *:nth-child(1) { animation-delay: 0.45s; }
 </style>
 </head>
 <body>
-  <div class="slide">
-    <!-- HEADER (meta only, top-right) -->
-    <header class="slide-header">
-      <div class="slide-meta">
-        <span class="label">品牌预设预览</span>
-        <span class="dot">●</span>
-        <span class="label">Sinochem Signature</span>
-      </div>
-    </header>
+  <div class="deck">
+    <section class="slide">
+      <!-- HEADER：标题永远置顶 -->
+      <header class="slide-header">
+        <h1 class="title">值得信赖的专业力量</h1>
+        <div class="accent-rule"></div>
+        <p class="subtitle">
+          Sinochem Signature 品牌预设 — 以克制、干净、值得信赖为核心气质，
+          服务于中宏保险企业级演示场景。16:9 固定画布 + 品牌绿强调 + 思源黑体排版。
+        </p>
+      </header>
 
-    <!-- BODY -->
-    <main class="slide-body">
-      <div class="eyebrow">Manulife-Sinochem · 30th Anniversary</div>
-      <h1 class="title">值得信赖的<span class="accent">专业力量</span></h1>
-      <div class="accent-rule"></div>
-      <p class="subtitle">
-        Sinochem Signature 品牌预设 — 以克制、干净、值得信赖为核心气质，
-        服务于中宏保险企业级演示场景。纯白画布 + 品牌绿强调 + 思源黑体排版。
-      </p>
-
-      <div class="stats">
-        <div class="stat">
-          <div class="num">30<span class="unit">年</span></div>
-          <div class="label">深耕中国市场</div>
+      <!-- BODY：从顶部排起，不再垂直居中 -->
+      <main class="slide-body">
+        <div class="stats">
+          <div class="stat">
+            <div class="num">30<span class="unit">年</span></div>
+            <div class="label">深耕中国市场</div>
+          </div>
+          <div class="stat">
+            <div class="num">500<span class="unit">万+</span></div>
+            <div class="label">服务客户</div>
+          </div>
+          <div class="stat">
+            <div class="num">98.7<span class="unit">%</span></div>
+            <div class="label">客户满意度</div>
+          </div>
         </div>
-        <div class="stat">
-          <div class="num">500<span class="unit">万+</span></div>
-          <div class="label">服务客户</div>
-        </div>
-        <div class="stat">
-          <div class="num">98.7<span class="unit">%</span></div>
-          <div class="label">客户满意度</div>
-        </div>
-      </div>
-    </main>
+      </main>
 
-    <!-- LOGO BOTTOM LEFT -->
-    <div class="logo-bottom">
-      <img src="data:image/png;base64,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" alt="中宏保险" />
-      <b style="color: #00A758; font-family: 'Noto Sans SC', sans-serif; font-weight: 700; font-size: 24px; white-space: nowrap;">中宏保险</b>
-    </div>
+      <!-- FOOTER -->
+      <footer class="slide-footer">
+        <div class="page-index">01<span class="sep">/</span>12</div>
+      </footer>
 
-    <!-- FOOTER -->
-    <footer class="slide-footer">
-      <div class="footer-left">
-        <span class="bar"></span>
+      <!-- LOGO 水印（左下） -->
+      <div class="logo-bottom">
+        <img src="data:image/png;base64,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" alt="中宏保险" />
+        <b class="company-name">中宏保险</b>
       </div>
-      <div class="page-index">01<span class="sep">/</span>12</div>
-    </footer>
+    </section>
   </div>
 </body>
 </html>

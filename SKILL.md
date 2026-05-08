@@ -89,6 +89,16 @@ When enhancing existing presentations, viewport fitting is the biggest risk:
 
 Make sure `assets/logo.png` exists in the output directory — the preset requires it for the watermark.
 
+### Sinochem Signature — Canvas & Title Invariants (override viewport-base.css)
+
+These three rules are HARD requirements for the Sinochem Signature preset and supersede the generic viewport-base.css rules whenever they conflict. Together they guarantee that HTML → PPTX export via `scripts/export-pptx.py` is pixel-faithful.
+
+1. **16:9 canvas lock (no full browser auto-fit).** Wrap all `<section class="slide">` in a `<div class="deck">` container that locks the canvas to 16:9: `width: min(100vw, calc(100vh * 16 / 9)); height: min(100vh, calc(100vw * 9 / 16));`. `html/body` background fills the letterbox area with `#0f1a13`. Each slide is `width: 100%; height: 100%; aspect-ratio: 16/9;` relative to the deck — never `100vw/100vh`.
+2. **Title always on top.** Inside every slide use `grid-template-rows: auto 1fr auto` where row 1 (`.slide-header`) holds eyebrow + `<h1>` + accent-rule + subtitle with `flex-direction: column; align-items: flex-start;`. The body row uses `justify-content: flex-start` — never `center` — so content flows top-down and the title never drifts from the top edge.
+3. **Use `cqw`/`cqh` instead of `vw`/`vh` inside slides.** The deck declares `container-type: size; container-name: deck;`, making `cqw`/`cqh` relative to the 16:9 canvas rather than the browser. This is what makes the preview match the PPTX export exactly: `scripts/export-pptx.py` runs Chromium at 1920×1080, the deck fills the viewport, and `_px2emu` maps each element without any aspect-ratio drift.
+
+Copy the full canvas CSS block from [STYLE_PRESETS.md](STYLE_PRESETS.md) § Sinochem Signature verbatim. When adding or editing content inside slides, replace any remaining `vw`/`vh` with `cqw`/`cqh`. Never reintroduce `100vw/100vh` on `.slide`, never vertically center the title, and never remove the `.deck` wrapper — any of these will break PPTX export fidelity.
+
 ---
 
 ## Phase 1: Content Discovery (New Presentations)

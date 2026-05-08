@@ -304,7 +304,13 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
 
 **Vibe:** Trustworthy, clean, institutional, corporate-grade (financial/insurance aesthetic)
 
-**Layout:** Pure white canvas with generous whitespace. Logo watermark top-left, page index bottom-right, brand-green accent rule beneath every heading. Strict two-column or single-column layouts — never decorative splits.
+**Layout:** Pure white canvas locked to **16:9 aspect ratio (letterbox)** — slides NEVER stretch to fit arbitrary browser sizes. Generous whitespace. Logo watermark bottom-left, page index bottom-right, brand-green accent rule beneath every heading. Strict two-column or single-column layouts — never decorative splits.
+
+**Canvas & Title Rules (NON-NEGOTIABLE for this preset, override viewport-base.css):**
+- Slide canvas is **locked to 16:9** via a `.deck` container. The deck uses `width: min(100vw, calc(100vh * 16 / 9))` + `height: min(100vh, calc(100vw * 9 / 16))`. Letterbox (empty area) is filled by `body` dark background — this is intentional, not a bug.
+- Every `.slide` uses `width: 100%; height: 100%; aspect-ratio: 16/9;` relative to `.deck` — never `100vw/100vh`.
+- The deck declares `container-type: size; container-name: deck;` so inner sizes use **`cqw` / `cqh`** (container query units) instead of `vw` / `vh`. This guarantees preview fidelity regardless of browser aspect ratio AND guarantees PPTX export fidelity (Playwright opens at 1920×1080 → deck fills viewport → `cqw`/`cqh` == `vw`/`vh` → pixel-perfect `_px2emu` mapping in `scripts/export-pptx.py`).
+- **Title is ALWAYS at the top** of every slide: put eyebrow / `<h1>` / accent-rule / subtitle inside `.slide-header` (grid row 1, `flex-direction: column; align-items: flex-start;` — no vertical centering). `.slide-body` uses `justify-content: flex-start;` so content flows top-down.
 
 **Typography:**
 - Display: `Noto Sans SC` (700) + `Manrope` (700/800) for English fallback
@@ -327,7 +333,7 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
 ```
 
 **Signature Elements:**
-- **Brand accent rule** beneath every heading: 48px green bar (`width: clamp(40px, 4vw, 64px); height: 3px; background: var(--brand-green);`)
+- **Brand accent rule** beneath every heading: 48px green bar (`width: clamp(40px, 4cqw, 64px); height: 3px; background: var(--brand-green);`)
 - **Logo watermark with company name** at bottom-left of every slide — **MUST embed as base64 data URI** (do NOT use relative file paths). Use a flex container wrapping the logo image and company name text, positioned at the bottom-left corner with `position: absolute; left: var(--slide-padding); bottom: var(--slide-padding);`. Use this exact HTML with the complete base64 data below:
   ```html
 <div style="display: flex; align-items: center; gap: 8px;">
@@ -349,6 +355,63 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
 ```
+
+**Required Canvas CSS (copy verbatim — overrides viewport-base.css for this preset):**
+```css
+/* 16:9 letterbox canvas. Slides do NOT auto-fit browser; they stay 16:9
+   so HTML→PPTX export (export-pptx.py runs at 1920×1080) never distorts. */
+html, body {
+  height: 100%; margin: 0; overflow: hidden;
+  background: #0f1a13;                /* letterbox bars */
+  font-family: var(--font-body);
+  color: var(--text-primary);
+}
+body { display: flex; align-items: center; justify-content: center; }
+
+.deck {
+  width:  min(100vw, calc(100vh * 16 / 9));
+  height: min(100vh, calc(100vw * 9 / 16));
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scroll-behavior: smooth;
+  background: var(--bg-primary);
+  box-shadow: 0 12px 60px rgba(0,0,0,0.25);
+  container-type: size;               /* enables cqw / cqh inside */
+  container-name: deck;
+}
+
+.slide {
+  width: 100%;
+  height: 100%;                       /* = 100cqh = 16:9 */
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  display: grid;
+  grid-template-rows: auto 1fr auto;  /* header(title) / body / footer */
+  row-gap: clamp(1rem, 2cqw, 2rem);
+  padding: clamp(2rem, 5cqw, 5rem);
+  padding-bottom: calc(clamp(2rem, 5cqw, 5rem) + clamp(40px, 6cqh, 68px));
+  position: relative;
+  background: var(--bg-primary);
+  scroll-snap-align: start;
+}
+
+/* TITLE ALWAYS AT THE TOP — no vertical centering ever */
+.slide-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: clamp(0.5rem, 1cqw, 1rem);
+}
+.slide-body {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;        /* top-down, never centered */
+  gap: clamp(1rem, 2cqw, 1.75rem);
+  overflow: hidden;
+}
+```
+
+**Inside slides, replace every `vw`/`vh` unit with `cqw`/`cqh`** for typography and spacing — otherwise non-16:9 browser windows will render fonts out of scale relative to the locked canvas. `clamp(0.85rem, 1.2cqw, 1.05rem)` is the pattern.
 
 **When to use this preset:**
 - 中宏保险内部分享、客户路演、合规培训
