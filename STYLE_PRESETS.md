@@ -307,7 +307,7 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
 **Layout:** Pure white canvas locked to **16:9 aspect ratio (letterbox)** — slides NEVER stretch to fit arbitrary browser sizes. Generous whitespace. Logo watermark bottom-left, page index bottom-right, brand-green accent rule beneath every heading. Strict two-column or single-column layouts — never decorative splits.
 
 **Canvas & Title Rules (NON-NEGOTIABLE for this preset, override viewport-base.css):**
-- Slide canvas is **locked to 16:9** via a `.deck` container. The deck uses `width: min(100vw, calc(100vh * 16 / 9))` + `height: min(100vh, calc(100vw * 9 / 16))`. Letterbox (empty area) is filled by `body` dark background — this is intentional, not a bug.
+- Slide canvas is **locked to 16:9** via a `.deck` container. The deck uses `width: min(100vw, calc(100vh * 16 / 9))` + `height: min(100vh, calc(100vw * 9 / 16))`. The letterbox area (outside the 16:9 deck) uses a **white** `body` background (`#ffffff`).
 - Every `.slide` uses `width: 100%; height: 100%; aspect-ratio: 16/9;` relative to `.deck` — never `100vw/100vh`.
 - The deck declares `container-type: size; container-name: deck;` so inner sizes use **`cqw` / `cqh`** (container query units) instead of `vw` / `vh`. This guarantees preview fidelity regardless of browser aspect ratio AND guarantees PPTX export fidelity (Playwright opens at 1920×1080 → deck fills viewport → `cqw`/`cqh` == `vw`/`vh` → pixel-perfect `_px2emu` mapping in `scripts/export-pptx.py`).
 - **Title is ALWAYS at the top** of every slide: put eyebrow / `<h1>` / accent-rule / subtitle inside `.slide-header` (grid row 1, `flex-direction: column; align-items: flex-start;` — no vertical centering). `.slide-body` uses `justify-content: flex-start;` so content flows top-down.
@@ -362,7 +362,7 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
    so HTML→PPTX export (export-pptx.py runs at 1920×1080) never distorts. */
 html, body {
   height: 100%; margin: 0; overflow: hidden;
-  background: #0f1a13;                /* letterbox bars */
+  background: #ffffff;                /* letterbox bars — white */
   font-family: var(--font-body);
   color: var(--text-primary);
 }
@@ -372,10 +372,11 @@ body { display: flex; align-items: center; justify-content: center; }
   width:  min(100vw, calc(100vh * 16 / 9));
   height: min(100vh, calc(100vw * 9 / 16));
   overflow-y: auto;
+  overflow-x: hidden;                 /* prevent inner vw-sized elements from bleeding out */
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
   background: var(--bg-primary);
-  box-shadow: 0 12px 60px rgba(0,0,0,0.25);
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.08);  /* subtle border visible on white bg */
   container-type: size;               /* enables cqw / cqh inside */
   container-name: deck;
 }
@@ -409,9 +410,18 @@ body { display: flex; align-items: center; justify-content: center; }
   gap: clamp(1rem, 2cqw, 1.75rem);
   overflow: hidden;
 }
+/* Override viewport-base.css — all sizing inside the 16:9 canvas MUST use cqw/cqh */
+.card, .container, .content-box {
+  max-width: min(90cqw, 1000px);
+  max-height: min(80cqh, 700px);
+}
+img, .image-container {
+  max-width: 100%;
+  max-height: min(50cqh, 400px);
+}
 ```
 
-**Inside slides, replace every `vw`/`vh` unit with `cqw`/`cqh`** for typography and spacing — otherwise non-16:9 browser windows will render fonts out of scale relative to the locked canvas. `clamp(0.85rem, 1.2cqw, 1.05rem)` is the pattern.
+**Inside slides, ALWAYS use `cqw`/`cqh` instead of `vw`/`vh`.** When the browser is wider than 16:9, `vw > cqw`, so any `vw`-sized element overflows the 16:9 deck and gets clipped. Before generating or editing, audit every `clamp()`, `min()`, `max()`, and standalone length that uses `vw`/`vh` and replace with the `cqw`/`cqh` equivalent. Pattern: `clamp(0.85rem, 1.2cqw, 1.05rem)`. The only exception is the `.deck` container itself (which correctly uses `vw`/`vh` to size against the browser).
 
 **When to use this preset:**
 - 中宏保险内部分享、客户路演、合规培训

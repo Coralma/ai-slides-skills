@@ -35,17 +35,17 @@
         --font-display: 'Noto Sans SC', 'Manrope', sans-serif;
         --font-body: 'Noto Sans SC', 'Manrope', sans-serif;
         --font-numbers: 'Manrope', sans-serif;
-        --title-size: clamp(1.5rem, 5vw, 4rem);
-        --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
-        --h3-size: clamp(1rem, 2.5vw, 1.75rem);
-        --body-size: clamp(0.75rem, 1.5vw, 1.125rem);
-        --small-size: clamp(0.65rem, 1vw, 0.875rem);
-        --tiny-size: clamp(0.55rem, 0.8vw, 0.75rem);
+        --title-size: clamp(1.5rem, 5cqw, 4rem);
+        --h2-size: clamp(1.25rem, 3.5cqw, 2.5rem);
+        --h3-size: clamp(1rem, 2.5cqw, 1.75rem);
+        --body-size: clamp(0.75rem, 1.5cqw, 1.125rem);
+        --small-size: clamp(0.65rem, 1cqw, 0.875rem);
+        --tiny-size: clamp(0.55rem, 0.8cqw, 0.75rem);
 
         /* Spacing — MUST use clamp() */
-        --slide-padding: clamp(1rem, 4vw, 4rem);
-        --content-gap: clamp(0.5rem, 2vw, 2rem);
-        --element-gap: clamp(0.25rem, 1vw, 1rem);
+        --slide-padding: clamp(1rem, 4cqw, 4rem);
+        --content-gap: clamp(0.5rem, 2cqw, 2rem);
+        --element-gap: clamp(0.25rem, 1cqw, 1rem);
 
         /* Animation */
         --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -58,80 +58,73 @@
       * { margin: 0; padding: 0; box-sizing: border-box; }
 
       /* ===========================================
-         VIEWPORT FITTING: MANDATORY BASE STYLES
+         SINOCHEM SIGNATURE — 16:9 CANVAS LOCK
          =========================================== */
-      html, body { height: 100%; overflow-x: hidden; }
-      html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+      html, body {
+        height: 100%; margin: 0; overflow: hidden;
+        background: #ffffff;
+        font-family: var(--font-body); color: var(--text-primary);
+      }
+      body { display: flex; align-items: center; justify-content: center; }
+
+      .deck {
+        width:  min(100vw, calc(100vh * 16 / 9));
+        height: min(100vh, calc(100vw * 9 / 16));
+        overflow-y: auto; overflow-x: hidden;
+        scroll-snap-type: y mandatory; scroll-behavior: smooth;
+        background: var(--bg-primary);
+        box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+        container-type: size; container-name: deck;
+      }
 
       .slide {
-        width: 100vw; height: 100vh; height: 100dvh;
+        width: 100%; height: 100%; aspect-ratio: 16 / 9;
         overflow: hidden; scroll-snap-align: start;
         display: flex; flex-direction: column; position: relative;
+        background: var(--bg-primary);
       }
 
       .slide-content {
         flex: 1; display: flex; flex-direction: column;
-        justify-content: center; max-height: 100%;
-        overflow: hidden; padding: var(--slide-padding);
+        justify-content: flex-start; max-height: 100%;
+        overflow: hidden;
+        padding: clamp(2rem, 5cqw, 5rem);
+        padding-bottom: calc(clamp(2rem, 5cqw, 5rem) + clamp(40px, 6cqh, 68px));
       }
 
       :root {
-        --title-size: clamp(1.5rem, 5vw, 4rem);
-        --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
-        --h3-size: clamp(1rem, 2.5vw, 1.75rem);
-        --body-size: clamp(0.75rem, 1.5vw, 1.125rem);
-        --small-size: clamp(0.65rem, 1vw, 0.875rem);
-        --slide-padding: clamp(1rem, 4vw, 4rem);
-        --content-gap: clamp(0.5rem, 2vw, 2rem);
-        --element-gap: clamp(0.25rem, 1vw, 1rem);
+        --title-size: clamp(1.5rem, 3.5cqw, 4rem);
+        --h2-size: clamp(1.25rem, 2.5cqw, 2.5rem);
+        --h3-size: clamp(1rem, 1.8cqw, 1.75rem);
+        --body-size: clamp(0.75rem, 1.1cqw, 1.125rem);
+        --small-size: clamp(0.65rem, 0.85cqw, 1rem);
+        --tiny-size: clamp(0.55rem, 0.7cqw, 0.75rem);
+        --slide-padding: clamp(2rem, 5cqw, 5rem);
+        --content-gap: clamp(0.5rem, 1.5cqw, 2rem);
+        --element-gap: clamp(0.25rem, 0.8cqw, 1rem);
       }
 
       .card, .container, .content-box {
-        max-width: min(90vw, 1000px); max-height: min(80vh, 700px);
+        max-width: min(90cqw, 1000px); max-height: min(80cqh, 700px);
       }
 
-      .feature-list, .bullet-list { gap: clamp(0.4rem, 1vh, 1rem); }
+      .feature-list, .bullet-list { gap: clamp(0.4rem, 0.8cqh, 1rem); }
       .feature-list li, .bullet-list li { font-size: var(--body-size); line-height: 1.4; }
 
       .grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
-        gap: clamp(0.5rem, 1.5vw, 1rem);
+        gap: clamp(0.5rem, 1.2cqw, 1rem);
       }
 
       img, .image-container {
-        max-width: 100%; max-height: min(50vh, 400px); object-fit: contain;
+        max-width: 100%; max-height: min(50cqh, 400px); object-fit: contain;
       }
 
-      @media (max-height: 700px) {
-        :root {
-          --slide-padding: clamp(0.75rem, 3vw, 2rem);
-          --content-gap: clamp(0.4rem, 1.5vw, 1rem);
-          --title-size: clamp(1.25rem, 4.5vw, 2.5rem);
-          --h2-size: clamp(1rem, 3vw, 1.75rem);
-        }
-      }
-      @media (max-height: 600px) {
-        :root {
-          --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
-          --content-gap: clamp(0.3rem, 1vw, 0.75rem);
-          --title-size: clamp(1.1rem, 4vw, 2rem);
-          --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
-        }
-        .nav-dots, .keyboard-hint, .decorative { display: none; }
-      }
-      @media (max-height: 500px) {
-        :root {
-          --slide-padding: clamp(0.4rem, 2vw, 1rem);
-          --title-size: clamp(1rem, 3.5vw, 1.5rem);
-          --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
-          --body-size: clamp(0.65rem, 1vw, 0.85rem);
-        }
-      }
-      @media (max-width: 600px) {
-        :root { --title-size: clamp(1.25rem, 7vw, 2.5rem); }
-        .grid { grid-template-columns: 1fr; }
-      }
+
+
+
+
 
       @media (prefers-reduced-motion: reduce) {
         *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.2s !important; }
@@ -179,9 +172,9 @@
       /* Brand accent rule beneath headings */
       h2, h3 { position: relative; }
       .brand-rule {
-        width: clamp(40px, 4vw, 64px); height: 3px;
+        width: clamp(40px, 4cqw, 64px); height: 3px;
         background: var(--brand-green);
-        margin-top: clamp(0.35rem, 1vh, 0.75rem);
+        margin-top: clamp(0.35rem, 1cqh, 0.75rem);
         border-radius: 2px;
       }
 
@@ -209,7 +202,7 @@
       .callout {
         display: inline-block;
         background: var(--brand-green-soft); color: var(--brand-green-dark);
-        padding: clamp(0.2rem, 0.5vh, 0.5rem) clamp(0.5rem, 1.5vw, 1rem);
+        padding: clamp(0.2rem, 0.5cqh, 0.5rem) clamp(0.5rem, 1.5cqw, 1rem);
         border-radius: 999px; font-size: var(--small-size);
         font-weight: 500; white-space: nowrap;
       }
@@ -217,12 +210,12 @@
       /* Comparison card */
       .compare-grid {
         display: grid; grid-template-columns: 1fr 1fr;
-        gap: clamp(0.5rem, 2vw, 1.5rem); width: 100%;
+        gap: clamp(0.5rem, 2cqw, 1.5rem); width: 100%;
       }
 
       .compare-card {
-        background: var(--bg-secondary); border-radius: clamp(8px, 1vw, 12px);
-        padding: clamp(0.75rem, 2vw, 1.5rem);
+        background: var(--bg-secondary); border-radius: clamp(8px, 1cqw, 12px);
+        padding: clamp(0.75rem, 2cqw, 1.5rem);
         border: 1px solid var(--divider);
         position: relative; overflow: hidden;
       }
@@ -233,8 +226,8 @@
       .compare-card .card-label {
         font-family: var(--font-display); font-size: var(--small-size);
         font-weight: 700; color: var(--text-primary);
-        margin-bottom: clamp(0.3rem, 1vh, 0.75rem);
-        display: flex; align-items: center; gap: clamp(0.25rem, 0.5vw, 0.5rem);
+        margin-bottom: clamp(0.3rem, 1cqh, 0.75rem);
+        display: flex; align-items: center; gap: clamp(0.25rem, 0.5cqw, 0.5rem);
       }
       .compare-card .card-label .badge {
         font-family: var(--font-numbers); font-size: var(--tiny-size);
@@ -251,9 +244,9 @@
       }
       .compare-card ul li {
         font-size: var(--small-size); line-height: 1.5;
-        color: var(--text-secondary); padding: clamp(0.15rem, 0.5vh, 0.4rem) 0;
+        color: var(--text-secondary); padding: clamp(0.15rem, 0.5cqh, 0.4rem) 0;
         border-bottom: 1px solid var(--divider);
-        padding-left: clamp(0.5rem, 1.5vw, 1.2rem);
+        padding-left: clamp(0.5rem, 1.5cqw, 1.2rem);
         position: relative;
       }
       .compare-card ul li:last-child { border-bottom: none; }
@@ -272,14 +265,14 @@
 
       /* Feature item */
       .feature-item {
-        display: flex; gap: clamp(0.5rem, 1.5vw, 1rem);
+        display: flex; gap: clamp(0.5rem, 1.5cqw, 1rem);
         align-items: flex-start;
       }
       .feature-icon {
-        flex-shrink: 0; width: clamp(32px, 4vw, 48px);
-        height: clamp(32px, 4vw, 48px); border-radius: 10px;
+        flex-shrink: 0; width: clamp(32px, 4cqw, 48px);
+        height: clamp(32px, 4cqw, 48px); border-radius: 10px;
         display: flex; align-items: center; justify-content: center;
-        font-size: clamp(1rem, 2vw, 1.5rem);
+        font-size: clamp(1rem, 2cqw, 1.5rem);
         background: var(--brand-green-soft); color: var(--brand-green-dark);
       }
       .feature-text h3 { font-size: var(--h3-size); margin-bottom: 0.15em; }
@@ -287,8 +280,8 @@
 
       /* Reason card */
       .reason-card {
-        background: var(--bg-secondary); border-radius: clamp(8px, 1vw, 12px);
-        padding: clamp(0.75rem, 2vw, 1.5rem);
+        background: var(--bg-secondary); border-radius: clamp(8px, 1cqw, 12px);
+        padding: clamp(0.75rem, 2cqw, 1.5rem);
         border-left: 3px solid var(--brand-green);
         transition: transform 0.2s ease, box-shadow 0.2s ease;
       }
@@ -298,10 +291,10 @@
       }
       .reason-number {
         font-family: var(--font-numbers); font-weight: 800;
-        font-size: clamp(1.5rem, 3vw, 2.5rem);
+        font-size: clamp(1.5rem, 3cqw, 2.5rem);
         color: var(--brand-green); line-height: 1;
       }
-      .reason-card h3 { font-size: clamp(0.9rem, 1.8vw, 1.25rem); margin: 0.3em 0 0.15em; }
+      .reason-card h3 { font-size: clamp(0.9rem, 1.8cqw, 1.25rem); margin: 0.3em 0 0.15em; }
       .reason-card p { font-size: var(--small-size); line-height: 1.5; }
 
       /* Stat highlight */
@@ -319,28 +312,28 @@
         display: flex; flex-direction: column;
         justify-content: center; align-items: center;
         text-align: center; flex: 1; padding: var(--slide-padding);
-        max-width: min(90vw, 800px); margin: 0 auto;
+        max-width: min(90cqw, 800px); margin: 0 auto;
       }
       .cover-slide .cover-tag {
         font-family: var(--font-display); font-size: var(--small-size);
         font-weight: 500; color: var(--brand-green);
         letter-spacing: 0.1em; text-transform: uppercase;
-        margin-bottom: clamp(0.5rem, 2vh, 1.5rem);
+        margin-bottom: clamp(0.5rem, 2cqh, 1.5rem);
       }
       .cover-slide h1 {
-        font-size: clamp(2rem, 6vw, 4.5rem);
-        margin-bottom: clamp(0.5rem, 2vh, 1.5rem);
+        font-size: clamp(2rem, 6cqw, 4.5rem);
+        margin-bottom: clamp(0.5rem, 2cqh, 1.5rem);
       }
       .cover-slide h1 .green { color: var(--brand-green); }
       .cover-slide .cover-sub {
         font-family: var(--font-body); font-size: var(--body-size);
-        color: var(--text-secondary); max-width: min(80vw, 500px);
+        color: var(--text-secondary); max-width: min(80cqw, 500px);
         line-height: 1.6;
       }
       .cover-slide .cover-line {
-        width: clamp(48px, 6vw, 80px); height: 3px;
+        width: clamp(48px, 6cqw, 80px); height: 3px;
         background: var(--brand-green); border-radius: 2px;
-        margin: clamp(0.5rem, 2vh, 1.5rem) auto;
+        margin: clamp(0.5rem, 2cqh, 1.5rem) auto;
       }
 
       /* Closing slide special */
@@ -355,45 +348,45 @@
       .closing-slide h1 { color: #ffffff; }
       .closing-slide .closing-sub {
         font-family: var(--font-body); color: rgba(255,255,255,0.7);
-        font-size: var(--body-size); margin-top: clamp(0.5rem, 2vh, 1.5rem);
+        font-size: var(--body-size); margin-top: clamp(0.5rem, 2cqh, 1.5rem);
       }
       .closing-slide .closing-line {
-        width: clamp(48px, 6vw, 80px); height: 3px;
+        width: clamp(48px, 6cqw, 80px); height: 3px;
         background: var(--brand-green); border-radius: 2px;
-        margin: clamp(0.5rem, 2vh, 1.5rem) auto;
+        margin: clamp(0.5rem, 2cqh, 1.5rem) auto;
       }
       .closing-slide .closing-cta {
         font-family: var(--font-display); color: var(--brand-green);
         font-size: var(--h3-size); font-weight: 700;
-        margin-top: clamp(0.5rem, 2vh, 1.5rem);
+        margin-top: clamp(0.5rem, 2cqh, 1.5rem);
       }
       .closing-slide .closing-url {
         font-family: var(--font-numbers); color: rgba(255,255,255,0.4);
-        font-size: var(--small-size); margin-top: clamp(0.5rem, 1.5vh, 1rem);
+        font-size: var(--small-size); margin-top: clamp(0.5rem, 1.5cqh, 1rem);
       }
 
       /* Slide header pattern */
       .slide-header {
-        margin-bottom: clamp(0.5rem, 2vh, 1.5rem);
+        margin-bottom: clamp(0.5rem, 2cqh, 1.5rem);
       }
       .slide-header .section-tag {
         font-family: var(--font-numbers); font-size: var(--tiny-size);
         font-weight: 700; color: var(--brand-green);
         letter-spacing: 0.08em; text-transform: uppercase;
-        margin-bottom: clamp(0.2rem, 0.8vh, 0.6rem);
+        margin-bottom: clamp(0.2rem, 0.8cqh, 0.6rem);
       }
 
       /* Two-column layout */
       .two-col {
         display: grid; grid-template-columns: 1fr 1fr;
-        gap: clamp(0.75rem, 2.5vw, 2rem); width: 100%;
+        gap: clamp(0.75rem, 2.5cqw, 2rem); width: 100%;
         align-items: start;
       }
 
       /* VS badge */
       .vs-badge {
         display: inline-flex; align-items: center; justify-content: center;
-        width: clamp(28px, 3.5vw, 40px); height: clamp(28px, 3.5vw, 40px);
+        width: clamp(28px, 3.5cqw, 40px); height: clamp(28px, 3.5cqw, 40px);
         border-radius: 50%; background: var(--accent-navy);
         color: #fff; font-family: var(--font-numbers);
         font-weight: 800; font-size: var(--tiny-size);
@@ -424,13 +417,13 @@
 
       /* Navigation dots */
       .nav-dots {
-        position: fixed; right: clamp(0.75rem, 2vw, 1.5rem);
+        position: fixed; right: clamp(0.75rem, 2cqw, 1.5rem);
         top: 50%; transform: translateY(-50%);
-        display: flex; flex-direction: column; gap: clamp(0.4rem, 1vh, 0.75rem);
+        display: flex; flex-direction: column; gap: clamp(0.4rem, 1cqh, 0.75rem);
         z-index: 999;
       }
       .nav-dot {
-        width: clamp(8px, 1vw, 10px); height: clamp(8px, 1vw, 10px);
+        width: clamp(8px, 1cqw, 10px); height: clamp(8px, 1cqw, 10px);
         border-radius: 50%; border: 2px solid var(--text-tertiary);
         background: transparent; cursor: pointer;
         transition: all 0.2s ease; padding: 0; opacity: 0.4;
@@ -447,7 +440,7 @@
         right: var(--slide-padding);
         font-family: var(--font-numbers); font-size: var(--tiny-size);
         color: var(--text-tertiary); display: flex; align-items: center;
-        gap: clamp(0.25rem, 0.5vw, 0.5rem);
+        gap: clamp(0.25rem, 0.5cqw, 0.5rem);
       }
       .page-index .idx-current {
         font-weight: 800; color: var(--text-primary);
@@ -463,17 +456,17 @@
         display: flex; align-items: center; gap: 8px;
       }
       .logo-watermark img {
-        max-height: clamp(28px, 4vh, 44px); width: auto;
+        max-height: clamp(28px, 4cqh, 44px); width: auto;
       }
       .logo-watermark span {
         color: var(--brand-green); font-family: var(--font-display);
-        font-weight: 700; font-size: clamp(14px, 2vh, 22px); white-space: nowrap;
+        font-weight: 700; font-size: clamp(14px, 2cqh, 22px); white-space: nowrap;
       }
 
       /* Grid for 5 reasons */
       .reasons-grid {
         display: grid; grid-template-columns: 1fr 1fr;
-        gap: clamp(0.5rem, 1.5vw, 1rem); width: 100%;
+        gap: clamp(0.5rem, 1.5cqw, 1rem); width: 100%;
       }
       .reasons-grid .reason-card:last-child {
         grid-column: 1 / -1;
@@ -497,6 +490,8 @@
 
     <!-- Navigation dots -->
     <nav class="nav-dots" id="navDots"></nav>
+
+    <div class="deck">
 
     <!-- ===========================================
          SLIDE 1: COVER
@@ -579,7 +574,7 @@
           <h2>中外合资，更懂中国</h2>
           <div class="brand-rule"></div>
         </div>
-        <div class="grid" style="margin-top: clamp(0.5rem, 2vh, 1.5rem);">
+        <div class="grid" style="margin-top: clamp(0.5rem, 2cqh, 1.5rem);">
           <!-- 宏利金融 -->
           <div class="feature-item reveal-left">
             <div class="feature-icon">
@@ -602,8 +597,8 @@
           </div>
         </div>
         <!-- Key takeaway -->
-        <div style="margin-top: clamp(1rem, 3vh, 2rem); background: var(--brand-green-soft); border-radius: clamp(8px, 1vw, 12px); padding: clamp(0.75rem, 2vw, 1.5rem); border-left: 3px solid var(--brand-green);" class="reveal">
-          <p style="font-size: clamp(0.85rem, 1.6vw, 1.1rem); color: var(--brand-green-dark); font-weight: 500; line-height: 1.5;">
+        <div style="margin-top: clamp(1rem, 3cqh, 2rem); background: var(--brand-green-soft); border-radius: clamp(8px, 1cqw, 12px); padding: clamp(0.75rem, 2cqw, 1.5rem); border-left: 3px solid var(--brand-green);" class="reveal">
+          <p style="font-size: clamp(0.85rem, 1.6cqw, 1.1rem); color: var(--brand-green-dark); font-weight: 500; line-height: 1.5;">
             <strong>"外资专业 + 本土资源"</strong> 的组合，使产品设计和服务更贴近中国消费者的实际需求。<br/>
             <span style="color: var(--text-tertiary); font-size: var(--small-size); margin-top: 0.3em; display: block;">
               相比之下，友邦为外商独资，决策链更多依赖香港总部，本土化响应不如中宏灵活。
@@ -663,7 +658,7 @@
           </div>
         </div>
         <!-- Callout -->
-        <div style="margin-top: clamp(0.75rem, 2vh, 1.5rem);" class="reveal">
+        <div style="margin-top: clamp(0.75rem, 2cqh, 1.5rem);" class="reveal">
           <span class="callout">中宏将健康管理嵌入公司战略核心，而非简单增值配套</span>
         </div>
       </div>
@@ -690,7 +685,7 @@
           <h2>行业标杆 —— "保险 + 健康管理"</h2>
           <div class="brand-rule"></div>
         </div>
-        <div class="grid" style="margin-top: clamp(0.5rem, 2vh, 1.5rem);">
+        <div class="grid" style="margin-top: clamp(0.5rem, 2cqh, 1.5rem);">
           <!-- MOVE计划 -->
           <div class="feature-item reveal-left">
             <div class="feature-icon">
@@ -723,8 +718,8 @@
           </div>
         </div>
         <!-- Key stat -->
-        <div style="margin-top: clamp(1rem, 3vh, 2rem); text-align: center;" class="reveal">
-          <p style="font-family: var(--font-numbers); font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 800; color: var(--brand-green); line-height: 1;">
+        <div style="margin-top: clamp(1rem, 3cqh, 2rem); text-align: center;" class="reveal">
+          <p style="font-family: var(--font-numbers); font-size: clamp(1.5rem, 4cqw, 2.5rem); font-weight: 800; color: var(--brand-green); line-height: 1;">
             领先行业近 10 年
           </p>
           <p style="font-size: var(--small-size); color: var(--text-tertiary); margin-top: 0.3em;">
@@ -758,27 +753,27 @@
         <div class="two-col">
           <!-- 中宏优势 -->
           <div>
-            <div class="card-label reveal" style="margin-bottom: clamp(0.5rem, 1.5vh, 1rem);">
+            <div class="card-label reveal" style="margin-bottom: clamp(0.5rem, 1.5cqh, 1rem);">
               <span class="tag-green">中宏优势</span>
             </div>
             <ul style="list-style: none; padding: 0;" class="reveal">
-              <li style="font-size: var(--body-size); color: var(--text-secondary); padding: clamp(0.3rem, 0.8vh, 0.6rem) 0; border-bottom: 1px solid var(--divider); padding-left: clamp(0.5rem, 1.5vw, 1.2rem); position: relative;">
+              <li style="font-size: var(--body-size); color: var(--text-secondary); padding: clamp(0.3rem, 0.8cqh, 0.6rem) 0; border-bottom: 1px solid var(--divider); padding-left: clamp(0.5rem, 1.5cqw, 1.2rem); position: relative;">
                 <span style="position: absolute; left: 0; color: var(--brand-green); font-weight: 700;">✓</span>
                 <strong>灵活定制化</strong> — 保障组合自由搭配
               </li>
-              <li style="font-size: var(--body-size); color: var(--text-secondary); padding: clamp(0.3rem, 0.8vh, 0.6rem) 0; border-bottom: 1px solid var(--divider); padding-left: clamp(0.5rem, 1.5vw, 1.2rem); position: relative;">
+              <li style="font-size: var(--body-size); color: var(--text-secondary); padding: clamp(0.3rem, 0.8cqh, 0.6rem) 0; border-bottom: 1px solid var(--divider); padding-left: clamp(0.5rem, 1.5cqw, 1.2rem); position: relative;">
                 <span style="position: absolute; left: 0; color: var(--brand-green); font-weight: 700;">✓</span>
                 <strong>"多倍保"</strong>系列重疾险 — 多种可选责任
               </li>
-              <li style="font-size: var(--body-size); color: var(--text-secondary); padding: clamp(0.3rem, 0.8vh, 0.6rem) 0; border-bottom: 1px solid var(--divider); padding-left: clamp(0.5rem, 1.5vw, 1.2rem); position: relative;">
+              <li style="font-size: var(--body-size); color: var(--text-secondary); padding: clamp(0.3rem, 0.8cqh, 0.6rem) 0; border-bottom: 1px solid var(--divider); padding-left: clamp(0.5rem, 1.5cqw, 1.2rem); position: relative;">
                 <span style="position: absolute; left: 0; color: var(--brand-green); font-weight: 700;">✓</span>
                 <strong>"健无忧"</strong>系列 — 健康管理内嵌到产品
               </li>
-              <li style="font-size: var(--body-size); color: var(--text-secondary); padding: clamp(0.3rem, 0.8vh, 0.6rem) 0; border-bottom: 1px solid var(--divider); padding-left: clamp(0.5rem, 1.5vw, 1.2rem); position: relative;">
+              <li style="font-size: var(--body-size); color: var(--text-secondary); padding: clamp(0.3rem, 0.8cqh, 0.6rem) 0; border-bottom: 1px solid var(--divider); padding-left: clamp(0.5rem, 1.5cqw, 1.2rem); position: relative;">
                 <span style="position: absolute; left: 0; color: var(--brand-green); font-weight: 700;">✓</span>
                 养老规划丰富 — 依托宏利全球经验
               </li>
-              <li style="font-size: var(--body-size); color: var(--text-secondary); padding: clamp(0.3rem, 0.8vh, 0.6rem) 0; padding-left: clamp(0.5rem, 1.5vw, 1.2rem); position: relative;">
+              <li style="font-size: var(--body-size); color: var(--text-secondary); padding: clamp(0.3rem, 0.8cqh, 0.6rem) 0; padding-left: clamp(0.5rem, 1.5cqw, 1.2rem); position: relative;">
                 <span style="position: absolute; left: 0; color: var(--brand-green); font-weight: 700;">✓</span>
                 数字化体验佳 — 全流程线上化
               </li>
@@ -786,15 +781,15 @@
           </div>
           <!-- 友邦特点 -->
           <div>
-            <div class="card-label reveal" style="margin-bottom: clamp(0.5rem, 1.5vh, 1rem);">
+            <div class="card-label reveal" style="margin-bottom: clamp(0.5rem, 1.5cqh, 1rem);">
               <span class="tag-navy">友邦特点</span>
             </div>
             <ul style="list-style: none; padding: 0;" class="reveal">
-              <li style="font-size: var(--body-size); color: var(--text-tertiary); padding: clamp(0.3rem, 0.8vh, 0.6rem) 0; border-bottom: 1px solid var(--divider); padding-left: clamp(0.5rem, 1.5vw, 1.2rem); position: relative;">
+              <li style="font-size: var(--body-size); color: var(--text-tertiary); padding: clamp(0.3rem, 0.8cqh, 0.6rem) 0; border-bottom: 1px solid var(--divider); padding-left: clamp(0.5rem, 1.5cqw, 1.2rem); position: relative;">
                 <span style="position: absolute; left: 0; color: var(--text-tertiary); opacity: 0.5;">·</span>
                 产品定价较高，品牌溢价明显
               </li>
-              <li style="font-size: var(--body-size); color: var(--text-tertiary); padding: clamp(0.3rem, 0.8vh, 0.6rem) 0; padding-left: clamp(0.5rem, 1.5vw, 1.2rem); position: relative;">
+              <li style="font-size: var(--body-size); color: var(--text-tertiary); padding: clamp(0.3rem, 0.8cqh, 0.6rem) 0; padding-left: clamp(0.5rem, 1.5cqw, 1.2rem); position: relative;">
                 <span style="position: absolute; left: 0; color: var(--text-tertiary); opacity: 0.5;">·</span>
                 产品设计偏标准化，定制化空间较小
               </li>
@@ -825,7 +820,7 @@
           <h2>服务更人性化，响应更快捷</h2>
           <div class="brand-rule"></div>
         </div>
-        <div class="grid" style="margin-top: clamp(0.5rem, 2vh, 1.5rem);">
+        <div class="grid" style="margin-top: clamp(0.5rem, 2cqh, 1.5rem);">
           <!-- 小额快赔 -->
           <div class="feature-item reveal-left">
             <div class="feature-icon">
@@ -891,7 +886,7 @@
           <h2>财务稳健，资源聚焦中国市场</h2>
           <div class="brand-rule"></div>
         </div>
-        <div class="grid" style="margin-top: clamp(0.5rem, 2vh, 1.5rem);">
+        <div class="grid" style="margin-top: clamp(0.5rem, 2cqh, 1.5rem);">
           <!-- 宏利G-SII -->
           <div class="feature-item reveal-left">
             <div class="feature-icon">
@@ -957,7 +952,7 @@
           <h2>为什么更应该选择中宏保险？</h2>
           <div class="brand-rule"></div>
         </div>
-        <div class="reasons-grid" style="margin-top: clamp(0.5rem, 2vh, 1.5rem);">
+        <div class="reasons-grid" style="margin-top: clamp(0.5rem, 2cqh, 1.5rem);">
           <!-- Reason 1 -->
           <div class="reason-card reveal-left">
             <div class="reason-number">01</div>
@@ -1008,10 +1003,10 @@
          =========================================== -->
     <section class="slide closing-slide" data-slide="9">
       <div class="closing-content">
-        <div class="reveal" style="font-family: var(--font-numbers); font-size: var(--tiny-size); color: rgba(255,255,255,0.3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: clamp(0.5rem, 2vh, 1.5rem);">
+        <div class="reveal" style="font-family: var(--font-numbers); font-size: var(--tiny-size); color: rgba(255,255,255,0.3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: clamp(0.5rem, 2cqh, 1.5rem);">
           MANULIFE-SINOCHEM
         </div>
-        <h1 class="reveal" style="font-size: clamp(2.5rem, 7vw, 5rem);">
+        <h1 class="reveal" style="font-size: clamp(2.5rem, 7cqw, 5rem);">
           中宏保险
         </h1>
         <div class="closing-line reveal"></div>
@@ -1169,5 +1164,6 @@
         new SlidePresentation();
       });
     </script>
+    </div><!-- /.deck -->
   </body>
 </html>
