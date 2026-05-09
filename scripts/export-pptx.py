@@ -146,23 +146,47 @@ COLLECT_JS = r"""
         const myOrder  = order++;
         const common   = { opacity: parseFloat(style.opacity), transform: style.transform };
 
-        const bgColor    = style.backgroundColor;
-        const bgImage    = style.backgroundImage;
-        const borderTopW = parseFloat(style.borderTopWidth) || 0;
-        const radiusPx   = parseFloat(style.borderTopLeftRadius) || 0;
-        const hasBg      = !isTransparent(bgColor);
-        const hasBgImg   = bgImage && bgImage !== 'none';
-        const hasBorder  = borderTopW > 0 && !isTransparent(style.borderTopColor);
+        const bgColor      = style.backgroundColor;
+        const bgImage      = style.backgroundImage;
+        const borderTopW   = parseFloat(style.borderTopWidth)    || 0;
+        const borderLeftW  = parseFloat(style.borderLeftWidth)   || 0;
+        const borderRightW = parseFloat(style.borderRightWidth)  || 0;
+        const borderBotW   = parseFloat(style.borderBottomWidth) || 0;
+        const radiusPx     = parseFloat(style.borderTopLeftRadius) || 0;
+        const hasBg        = !isTransparent(bgColor);
+        const hasBgImg     = bgImage && bgImage !== 'none';
+        // Uniform border: all 4 sides roughly equal (cards, etc.)
+        const hasBorder = borderTopW > 0 && !isTransparent(style.borderTopColor) &&
+            Math.abs(borderLeftW  - borderTopW) < 1 &&
+            Math.abs(borderRightW - borderTopW) < 1 &&
+            Math.abs(borderBotW   - borderTopW) < 1;
+        // Left-accent bar only (highlight box pattern: border-left + no other border)
+        const hasLeftAccent = borderLeftW > 1 && !isTransparent(style.borderLeftColor) &&
+            borderTopW < 1 && borderRightW < 1 && borderBotW < 1;
 
         if ((hasBg || hasBorder) && tag !== 'img' && tag !== 'svg') {
             items.push({
                 kind: 'shape', rect, z, order: myOrder,
-                bgColor:     hasBg     ? bgColor            : null,
-                bgImageRaw:  hasBgImg  ? bgImage            : null,
-                borderW:     hasBorder ? borderTopW         : 0,
+                bgColor:     hasBg     ? bgColor              : null,
+                bgImageRaw:  hasBgImg  ? bgImage              : null,
+                borderW:     hasBorder ? borderTopW           : 0,
                 borderColor: hasBorder ? style.borderTopColor : null,
                 radius: radiusPx,
                 ...common,
+            });
+        }
+        // Left-accent bar → a thin solid rectangle at the left edge
+        if (hasLeftAccent && rect.h > 1) {
+            items.push({
+                kind: 'shape',
+                rect: { x: rect.x, y: rect.y, w: borderLeftW, h: rect.h },
+                z: z + 1, order: myOrder + 0.5,
+                bgColor:    style.borderLeftColor,
+                bgImageRaw: null,
+                borderW: 0, borderColor: null,
+                radius: 1,
+                opacity: parseFloat(style.opacity),
+                transform: style.transform,
             });
         }
         if (hasBgImg) {
@@ -270,6 +294,45 @@ COLLECT_JS = r"""
     }
 
     for (const c of slide.children) visitShape(c);
+
+    // ─── Pass 3: CSS ::before bullet / list-item dots ─────────────
+    // ::before pseudo-elements are invisible to the DOM TreeWalker.
+    // For flex-row <li> elements that use ::before as a colored dot,
+    // compute the dot's approximate position and emit an oval shape.
+    Array.from(slide.querySelectorAll('li')).forEach(li => {
+        if (!isVisible(li)) return;
+        const liSt = getComputedStyle(li);
+        if (liSt.display !== 'flex' && liSt.display !== 'inline-flex') return;
+        const bSt = getComputedStyle(li, '::before');
+        if (!bSt || bSt.content === 'none' || bSt.content === 'normal') return;
+        const bBg = bSt.backgroundColor;
+        if (isTransparent(bBg)) return;
+        const bW  = parseFloat(bSt.width)      || 6;
+        const bH  = parseFloat(bSt.height)     || 6;
+        const bMT = parseFloat(bSt.marginTop)  || 0;
+        const bML = parseFloat(bSt.marginLeft) || 0;
+        const liRect  = relRect(li);
+        const padLeft = parseFloat(liSt.paddingLeft) || 0;
+        const padTop  = parseFloat(liSt.paddingTop)  || 0;
+        const bX = liRect.x + padLeft + bML;
+        const bY = liRect.y + padTop  + bMT;
+        // is it a circle? border-radius >= half of width
+        const bRadius = parseFloat(bSt.borderRadius) || 0;
+        const isCircle = bRadius >= bW * 0.4;
+        items.push({
+            kind:       isCircle ? 'oval' : 'shape',
+            rect:       { x: bX, y: bY, w: bW, h: bH },
+            z:          parseZ(liSt) + 2,
+            order:      order++,
+            bgColor:    bBg,
+            bgImageRaw: null,
+            borderW: 0, borderColor: null,
+            radius:     isCircle ? bW / 2 : bRadius,
+            opacity:    1,
+            transform:  'none',
+        });
+    });
+
     return { slide: { w: sRect.width, h: sRect.height }, items };
 }
 """
@@ -471,12 +534,31 @@ def _apply_rotation(shape, transform_css: str):
                 pass
 
 
-def _set_run_font(run, font_name: str):
+# Fonts that natively support CJK (Simplified Chinese) glyphs.
+# When the CSS font stack includes one of these, it is used as <a:ea>.
+# Otherwise <a:ea> is set to "+mn-ea" (PowerPoint theme East-Asian default,
+# typically Microsoft YaHei on Windows / PingFang SC on macOS).
+_CJK_FONTS: set[str] = {
+    "noto sans sc", "noto serif sc", "noto sans cjk sc",
+    "noto sans cjk tc", "noto serif cjk sc",
+    "source han sans sc", "source han serif sc",
+    "microsoft yahei", "microsoft yahei ui", "微软雅黑",
+    "pingfang sc", "苹方", "苹方-简",
+    "heiti sc", "黑体", "simhei", "simsun", "kaiti", "fangsong",
+    "hiragino sans gb", "wenquanyi micro hei",
+    "adobe song std", "adobe heiti std",
+}
+
+
+def _set_run_font(run, font_name: str, cjk_font: str = ""):
     """Set Latin, East Asian (CJK) and Complex Script fonts on a run.
 
-    python-pptx’s run.font.name only writes <a:latin>; Chinese/CJK text needs
-    <a:ea> and <a:cs> too, otherwise PowerPoint substitutes the theme’s default
+    python-pptx's run.font.name only writes <a:latin>; Chinese/CJK text needs
+    <a:ea> and <a:cs> too, otherwise PowerPoint substitutes the theme's default
     East-Asian font (SimSun / PingFang) instead of the intended face.
+
+    cjk_font: explicit East-Asian typeface. If empty and font_name is not a
+    known CJK font, <a:ea> falls back to "+mn-ea" (theme default CJK).
     """
     if not font_name:
         return
@@ -485,12 +567,19 @@ def _set_run_font(run, font_name: str):
     rPr = run._r.find(f"{{{_A_NS}}}rPr")
     if rPr is None:
         return
-    for tag in ("ea", "cs"):
+    # Choose the best CJK typeface
+    if cjk_font:
+        ea_typeface = cjk_font
+    elif font_name.lower() in _CJK_FONTS:
+        ea_typeface = font_name          # font is itself a CJK font
+    else:
+        ea_typeface = "+mn-ea"           # let PowerPoint pick the theme CJK font
+    for tag, typeface in (("ea", ea_typeface), ("cs", font_name)):
         existing = rPr.find(f"{{{_A_NS}}}{tag}")
         if existing is not None:
             rPr.remove(existing)
         el = etree.SubElement(rPr, f"{{{_A_NS}}}{tag}")
-        el.set("typeface", font_name)
+        el.set("typeface", typeface)
 
 
 # ── Text ──────────────────────────────────────────────────
@@ -547,6 +636,17 @@ def build_text(item: dict, ctx: Ctx):
               .strip().strip('"').strip("'"))
     rgb, _ = parse_color(item.get("color"))
 
+    # Resolve CJK font from the full font-family stack
+    full_stack = [
+        f.strip().strip('"').strip("'")
+        for f in (item.get("fontFamily") or "").split(",")
+        if f.strip().strip('"').strip("'")
+    ]
+    cjk_font = next(
+        (f for f in full_stack if f.lower() in _CJK_FONTS),
+        ""
+    )
+
     for idx, line in enumerate(item["text"].split("\n")):
         p = tf.paragraphs[0] if idx == 0 else tf.add_paragraph()
         p.alignment = _ALIGN_MAP.get(
@@ -571,7 +671,7 @@ def build_text(item: dict, ctx: Ctx):
         run.text = text
 
         if family:
-            _set_run_font(run, family)
+            _set_run_font(run, family, cjk_font)
         run.font.size = Pt(pt_size)
         run.font.bold = is_bold(item.get("fontWeight", ""))
         run.font.italic = (item.get("fontStyle", "").lower() == "italic")
@@ -601,6 +701,31 @@ def build_image(item: dict, ctx: Ctx):
         _apply_rotation(pic, item.get("transform"))
     except Exception as e:
         print(f"  ⚠ Skipped image ({ext}): {e}", file=sys.stderr)
+
+
+# ── Oval (circle bullet dot or other ellipse shape) ──────
+def build_oval(item: dict, ctx: Ctx):
+    left, top, width, height = _rect(item, ctx)
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+    shape = ctx.slide.shapes.add_shape(
+        MSO_SHAPE.OVAL, left, top, width, height
+    )
+    if item.get("bgColor"):
+        rgb, alpha = parse_color(item["bgColor"])
+        shape.fill.solid()
+        shape.fill.fore_color.rgb = rgb
+        if alpha < 0.99:
+            sp_pr = shape._element.spPr
+            srgb_elem = sp_pr.find(
+                f'.//{{{_A_NS}}}solidFill/{{{_A_NS}}}srgbClr'
+            )
+            if srgb_elem is not None:
+                alpha_elem = etree.SubElement(srgb_elem, f'{{{_A_NS}}}alpha')
+                alpha_elem.set('val', str(int(alpha * 100000)))
+    else:
+        shape.fill.background()
+    shape.line.fill.background()  # no border on bullet dots
+    _apply_rotation(shape, item.get("transform"))
 
 
 # ── SVG ───────────────────────────────────────────────────
@@ -729,6 +854,7 @@ _BUILDERS = {
     "image":   build_image,
     "svg":     build_svg,
     "shape":   build_shape,
+    "oval":    build_oval,
 }
 
 

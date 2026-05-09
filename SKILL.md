@@ -210,6 +210,7 @@ If images were provided, the slide outline already incorporates them from Step 1
 - Use fonts from Fontshare or Google Fonts — never system fonts
 - Add detailed comments explaining each section
 - Every section needs a clear `/* === SECTION NAME === */` comment block
+- **Icons: ALWAYS use Lucide vector icons — NEVER use emoji as decorative icons.** Load Lucide from CDN in `<head>`: `<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>`. Render icons as `<i data-lucide="icon-name"></i>` and call `lucide.createIcons()` at the end of the `<script>` block. Emoji are only acceptable inside literal code samples / code blocks shown as code output (e.g. `<pre>` / `<code>` content). See [html-template.md](html-template.md) § Icons for sizing patterns.
 
 ---
 

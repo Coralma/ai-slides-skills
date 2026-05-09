@@ -15,6 +15,9 @@ Reference architecture for generating slide presentations. Every presentation fo
     <!-- Fonts: use Fontshare or Google Fonts — never system fonts -->
     <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=..." />
 
+    <!-- Icons: ALWAYS Lucide — NEVER emoji for decorative icons -->
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
     <style>
       /* ===========================================
            CSS CUSTOM PROPERTIES (THEME)
@@ -154,10 +157,115 @@ Reference architecture for generating slide presentations. Every presentation fo
       }
 
       new SlidePresentation();
+
+      // Always call after DOM is ready — initialises every <i data-lucide="..."> tag
+      lucide.createIcons();
     </script>
   </body>
 </html>
 ```
+
+## Icons (Lucide — Mandatory)
+
+**Rule: NEVER use emoji for decorative icons. Always use Lucide SVG icons.**
+
+Emoji are only allowed inside literal code samples rendered inside `<pre>`/`<code>` blocks (i.e., content that represents actual code output, not UI decoration).
+
+### Loading
+
+```html
+<!-- In <head>, after font links -->
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+```
+
+### Rendering
+
+```html
+<i data-lucide="icon-name"></i>
+```
+
+Call `lucide.createIcons()` once, at the very end of the `<script>` block (after `new SlidePresentation()`). This replaces every `<i data-lucide>` with an inline `<svg>`.
+
+### Sizing patterns
+
+**Standalone icon inside a card / feature box** (large, with coloured background tile):
+
+```html
+<div class="feature-card-icon">
+  <i data-lucide="zap"></i>
+</div>
+```
+
+```css
+.feature-card-icon {
+  width: clamp(32px, 4cqw, 52px);
+  height: clamp(32px, 4cqw, 52px);
+  border-radius: clamp(8px, 1cqw, 12px);
+  background: var(--brand-green-soft);   /* or any soft tint */
+  display: flex; align-items: center; justify-content: center;
+}
+.feature-card-icon svg {
+  width: 55%; height: 55%;
+  stroke: var(--brand-green);
+  stroke-width: 1.75;
+  fill: none;
+}
+```
+
+**Inline icon in a heading / label** (small, leading the text):
+
+```html
+<p class="highlight-heading" style="color: var(--brand-green-dark);">
+  <i data-lucide="shield"></i> 权限分级管控
+</p>
+```
+
+```css
+.highlight-heading {
+  display: flex; align-items: center;
+  gap: clamp(5px, 0.7cqw, 9px);
+  font-weight: 700;
+  font-size: clamp(0.84rem, 1.22cqw, 1.1rem);
+  margin-bottom: 4px;
+}
+.highlight-heading svg {
+  flex-shrink: 0;
+  width: clamp(14px, 1.5cqw, 18px);
+  height: clamp(14px, 1.5cqw, 18px);
+  fill: none; stroke-width: 2;
+  stroke-linecap: round; stroke-linejoin: round;
+  stroke: currentColor;   /* inherits text color */
+}
+```
+
+### Common icon names
+
+| Concept | Icon name |
+|---|---|
+| Security / shield | `shield` |
+| Key / credentials | `key-round` |
+| Checklist / audit | `clipboard-list` |
+| Globe / network | `globe` |
+| Building / team | `building-2` |
+| Warning | `triangle-alert` |
+| Code / terminal | `terminal` |
+| Lightning / speed | `zap` |
+| Star / quality | `star` |
+| Settings / config | `settings-2` |
+| Users | `users` |
+| Chart / stats | `bar-chart-2` |
+| Lock | `lock` |
+| Cloud | `cloud` |
+| Rocket / launch | `rocket` |
+| Search | `search` |
+| Chat / AI | `message-square-text` |
+| Link / URL | `link` |
+| File | `file-text` |
+| Folder | `folder` |
+
+Browse the full icon library at https://lucide.dev/icons/
+
+---
 
 ## Required JavaScript Features
 
