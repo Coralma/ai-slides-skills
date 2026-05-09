@@ -317,37 +317,81 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
 - Body: `Noto Sans SC` (400/500) + `Manrope` (400/500)
 - Numbers/Stats: `Manrope` (800) — always in brand green or navy
 
-**Colors:**
+**Colors (locked to the official Manulife-Sinochem palette — green + navy on white):**
 ```css
 :root {
-    --bg-primary: #ffffff;
-    --bg-secondary: #f7f9f8;      /* Near-white tint for content blocks */
-    --brand-green: #00A758;       /* Primary brand color */
-    --brand-green-dark: #007a3e;  /* Hover / pressed states */
-    --brand-green-soft: #e6f5ed;  /* Callout / tag backgrounds */
-    --accent-navy: #1e3a5f;       /* Secondary accent from logo "30" */
-    --text-primary: #0f1a13;
-    --text-secondary: #5a6b60;
-    --divider: #e5ebe7;
+    /* Surfaces — pure white canvas, near-white tint for blocks */
+    --bg-primary:          #ffffff;
+    --bg-secondary:        #f7faf8;       /* Near-white tint for content blocks */
+    --bg-tertiary:         #fbfcfb;       /* Even softer tint for nested cards */
+
+    /* Primary brand — Sinochem green */
+    --brand-green:         #00A758;       /* Primary brand color */
+    --brand-green-dark:    #007a3e;       /* Hover / pressed / heading-on-soft */
+    --brand-green-soft:    #e6f5ed;       /* Callout / tag backgrounds */
+    --brand-green-ultra:   rgba(0,167,88,0.06);  /* Glow / highlight bg */
+
+    /* Auxiliary brand — Manulife deep navy */
+    --accent-navy:         #024097;       /* Secondary brand color */
+    --accent-navy-dark:    #02306f;       /* Pressed / dark surface */
+    --accent-navy-soft:    #e8edf6;       /* Cool callout / chart bg */
+    --accent-navy-ultra:   rgba(2,64,151,0.06); /* Glow / highlight bg */
+
+    /* Brand gradient — green → navy. Use ONLY for hero focal points */
+    --brand-gradient:      linear-gradient(135deg, #00A758 0%, #024097 100%);
+    --brand-gradient-soft: linear-gradient(135deg, #e6f5ed 0%, #e8edf6 100%);
+
+    /* Type & dividers */
+    --text-primary:        #0f1a13;
+    --text-secondary:      #5a6b60;
+    --text-tertiary:       #8a9b90;
+    --divider:             #e5ebe7;
+    --divider-cool:        #dde3ec;       /* paired with navy surfaces */
 }
 ```
 
 **Signature Elements:**
-- **Brand accent rule** beneath every heading: 48px green bar (`width: clamp(40px, 4cqw, 64px); height: 3px; background: var(--brand-green);`)
+- **Twin-bar accent rule** beneath every heading — the visual signature of this preset. A short bold green bar joined to a thinner navy continuation, expressing the green/navy duality:
+  ```html
+  <div class="brand-rule" aria-hidden="true"></div>
+  ```
+  ```css
+  .brand-rule {
+    display: inline-flex; align-items: center; gap: clamp(3px, 0.4cqw, 6px);
+  }
+  .brand-rule::before {
+    content: ''; display: block;
+    width: clamp(36px, 4cqw, 60px); height: 3px;
+    background: var(--brand-green); border-radius: 2px;
+  }
+  .brand-rule::after {
+    content: ''; display: block;
+    width: clamp(14px, 1.6cqw, 24px); height: 3px;
+    background: var(--accent-navy); border-radius: 2px; opacity: 0.85;
+  }
+  ```
+  (Backwards-compatible single-bar fallback: a plain `width: clamp(36px, 4cqw, 60px); height: 3px; background: var(--brand-green);` div still works.)
+- **Hero gradient text** — on cover/closing titles, wrap the focal phrase in `<em>` and apply `background: var(--brand-gradient); -webkit-background-clip: text; background-clip: text; color: transparent;` so the emphasized word reads as a green→navy diagonal gradient. Reserve for the cover word and closing CTA only — never body text.
 - **Logo watermark with company name** at bottom-left of every slide — **MUST embed as base64 data URI** (do NOT use relative file paths). Use a flex container wrapping the logo image and company name text, positioned at the bottom-left corner with `position: absolute; left: var(--slide-padding); bottom: var(--slide-padding);`. Use this exact HTML with the complete base64 data below:
   ```html
 <div style="display: flex; align-items: center; gap: 8px;">
   <img src="data:image/png;base64,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" alt="中宏保险" style="max-height: clamp(28px, 4vh, 44px); width: auto;" />
-  <span style="color: #00A758; font-family: 'Noto Sans SC', sans-serif; font-weight: 700; font-size: clamp(14px, 2vh, 22px); white-space: nowrap;">中宏保险</span>
+  <b class="company-name" style="display: inline-block; vertical-align: middle;">
+    <span style="display: block; font-size: 19px; color: #00A758; font-weight: bold; letter-spacing: 2px;">中宏保险</span>
+    <span style="display: block; font-size: 8px; color: #00A758; margin-top: 2px; font-weight: normal;">MANULIFE-SINOCHEM</span>
+  </b>
 </div>
   ```
   The above contains the complete inline logo with company name (PNG format, 76×88px, optimized for embedding). Copy the entire block as-is into generated HTML. The flex container ensures the logo and "中宏保险" text are vertically centered. Do NOT attempt to read from any external file.
-- **Page index** at bottom-right in small Manrope mono-spaced digits: `01 / 12` with divider in brand green
-- **Stat emphasis**: large numbers always in `--brand-green` or `--accent-navy`, body text stays dark
-- **Callout pills** with `--brand-green-soft` background + `--brand-green-dark` text
-- **Hairline dividers** at `1px solid var(--divider)` — no heavy borders, no drop shadows
-- **Entrance animation**: subtle 0.4s fade-up (translateY 12px) — NEVER bouncy or playful
-- **No gradients**, **no glassmorphism**, **no decorative shapes** — this style's power is in restraint
+- **Page index** at bottom-right in small Manrope mono-spaced digits: `01 / 12` with a 1px tall divider that itself uses `var(--brand-gradient)` (green→navy) for a tiny brand cue
+- **Stat emphasis**: large numbers alternate between `--brand-green` and `--accent-navy` across a row (e.g., card 1 green, card 2 navy, card 3 green) — body text stays dark. Optional accent dot above the number using the brand color of that card
+- **Dual-tone callout pills**: green pills use `--brand-green-soft` bg + `--brand-green-dark` text; navy pills use `--accent-navy-soft` bg + `--accent-navy-dark` text. Pair them when contrasting two ideas
+- **Highlight boxes** come in two flavors: green (`border-left: 3px solid var(--brand-green); background: var(--brand-green-ultra);`) and navy (`border-left: 3px solid var(--accent-navy); background: var(--accent-navy-ultra);`). Use navy for data/regulatory callouts, green for customer/product callouts
+- **Subtle corner glow** ONLY on cover and closing slides: two large soft radial gradients using `--brand-green-ultra` (top-left, ~40cqw) and `--accent-navy-ultra` (bottom-right, ~40cqw), `pointer-events: none; z-index: 0;`. Adds depth without busyness — content sits at `z-index: 1`
+- **Hairline dividers** at `1px solid var(--divider)` — no heavy borders, no drop shadows on content cards
+- **Entrance animation**: subtle 0.45s fade-up (translateY 14px) with `cubic-bezier(0.16, 1, 0.3, 1)` — NEVER bouncy or playful
+- **Reserve gradients** for: (a) the twin-bar accent rule emphasis, (b) hero `<em>` text on cover/closing, (c) corner glows on cover/closing, (d) the page-index divider. Do NOT apply gradients to body cards, buttons, or interior content — restraint is what makes the hero moments land
+- **No glassmorphism**, **no realistic illustrations**, **no decorative shapes inside content slides** — corporate-grade trust is built on consistent restraint
 
 **Required Font Loading:**
 ```html

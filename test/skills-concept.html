@@ -1,0 +1,1310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>理解 Skills — 中宏保险智能能力模块</title>
+
+  <!-- === FONTS: Noto Sans SC + Manrope (Sinochem Signature) === -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;700;800&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* ===================================================
+       SINOCHEM SIGNATURE — BRAND TOKENS
+       ================================================= */
+    :root {
+      /* Surfaces */
+      --bg-primary:        #ffffff;
+      --bg-secondary:      #f7faf8;
+      --bg-tertiary:       #fbfcfb;
+
+      /* Primary — Sinochem Green */
+      --brand-green:       #00A758;
+      --brand-green-dark:  #007a3e;
+      --brand-green-soft:  #e6f5ed;
+      --brand-green-ultra: rgba(0,167,88,0.06);
+
+      /* Auxiliary — Manulife Navy */
+      --accent-navy:       #024097;
+      --accent-navy-dark:  #02306f;
+      --accent-navy-soft:  #e8edf6;
+      --accent-navy-ultra: rgba(2,64,151,0.06);
+
+      /* Typography & Dividers */
+      --text-primary:   #0f1a13;
+      --text-secondary: #5a6b60;
+      --text-tertiary:  #8a9b90;
+      --divider:        #e5ebe7;
+      --divider-cool:   #dde3ec;
+
+      /* Fonts */
+      --font-display: 'Manrope', 'Noto Sans SC', sans-serif;
+      --font-body:    'Noto Sans SC', 'Manrope', sans-serif;
+
+      /* Animation */
+      --ease-out-expo:  cubic-bezier(0.16, 1, 0.3, 1);
+      --duration:       0.45s;
+    }
+
+    /* ===================================================
+       RESET
+       ================================================= */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    a { text-decoration: none; color: inherit; }
+    ul, ol { list-style: none; }
+
+    /* ===================================================
+       VIEWPORT BASE (from viewport-base.css — mandatory)
+       ================================================= */
+    html, body { height: 100%; overflow-x: hidden; }
+    html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+    .feature-list, .bullet-list { gap: clamp(0.4rem, 1vh, 1rem); }
+    .feature-list li, .bullet-list li { font-size: clamp(0.75rem,1.5vw,1.125rem); line-height: 1.4; }
+    img, .image-container { max-width: 100%; max-height: min(50cqh, 400px); object-fit: contain; }
+    @media (max-height: 700px) { :root { --slide-padding: clamp(0.75rem,3vw,2rem); } }
+    @media (max-height: 600px) { .nav-dots, .keyboard-hint, .decorative { display: none; } }
+    @media (prefers-reduced-motion: reduce) { .reveal, .reveal-item { opacity: 1 !important; transform: none !important; transition: none !important; } }
+
+    /* ===================================================
+       SINOCHEM CANVAS OVERRIDE (16:9 letterbox)
+       Overrides viewport-base.css — required for PPTX export
+       ================================================= */
+    html, body {
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #ffffff; /* letterbox bars */
+      font-family: var(--font-body);
+      color: var(--text-primary);
+    }
+    body { display: flex; align-items: center; justify-content: center; }
+
+    .deck {
+      width:  min(100vw, calc(100vh * 16 / 9));
+      height: min(100vh, calc(100vw * 9 / 16));
+      overflow-y: auto;
+      overflow-x: hidden;
+      scroll-snap-type: y mandatory;
+      scroll-behavior: smooth;
+      background: var(--bg-primary);
+      box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
+      container-type: size;   /* enables cqw / cqh */
+      container-name: deck;
+    }
+
+    /* Every slide: 16:9 grid row — header / body / (footer injected by JS) */
+    .slide {
+      width: 100%;
+      height: 100%;
+      aspect-ratio: 16 / 9;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      row-gap: clamp(0.8rem, 1.4cqw, 1.4rem);
+      padding: clamp(2rem, 4.5cqw, 4.5rem);
+      /* bottom padding reserves space for logo+page-idx injected by JS */
+      padding-bottom: calc(clamp(2rem, 4.5cqw, 4.5rem) + clamp(44px, 6.5cqh, 72px));
+      position: relative;
+      background: var(--bg-primary);
+      scroll-snap-align: start;
+    }
+
+    /* Title ALWAYS at top — never vertically centered */
+    .slide-header {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: clamp(0.35rem, 0.7cqw, 0.7rem);
+    }
+    .slide-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: clamp(0.8rem, 1.4cqw, 1.4rem);
+      overflow: hidden;
+    }
+    /* Override viewport-base card constraints for cqw */
+    .card, .container, .content-box {
+      max-width: min(90cqw, 1000px);
+      max-height: min(80cqh, 700px);
+    }
+
+    /* ===================================================
+       TYPOGRAPHY
+       ================================================= */
+    .eyebrow {
+      font-family: var(--font-display);
+      font-size: clamp(0.55rem, 0.85cqw, 0.78rem);
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--brand-green);
+    }
+    h1 {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3.8cqw, 3.6rem);
+      font-weight: 800;
+      line-height: 1.1;
+      color: var(--text-primary);
+    }
+    h1 em { font-style: normal; color: var(--brand-green); font-weight: 700; }
+    h2 {
+      font-family: var(--font-display);
+      font-size: clamp(1.15rem, 2.1cqw, 2rem);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--text-primary);
+    }
+    h3 {
+      font-family: var(--font-display);
+      font-size: clamp(0.82rem, 1.3cqw, 1.15rem);
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text-primary);
+    }
+    p {
+      font-size: clamp(0.7rem, 1cqw, 0.9rem);
+      line-height: 1.7;
+      color: var(--text-secondary);
+    }
+
+    /* ===================================================
+       BRAND RULE — twin-bar signature
+       ================================================= */
+    .brand-rule {
+      display: inline-flex;
+      align-items: center;
+      gap: clamp(3px, 0.4cqw, 6px);
+    }
+    .brand-rule::before {
+      content: ''; display: block;
+      width: clamp(36px, 4cqw, 60px); height: 3px;
+      background: var(--brand-green); border-radius: 2px;
+    }
+    .brand-rule::after {
+      content: ''; display: block;
+      width: clamp(14px, 1.6cqw, 24px); height: 3px;
+      background: var(--accent-navy); border-radius: 2px; opacity: 0.85;
+    }
+
+    /* ===================================================
+       LOGO WATERMARK (injected by JS)
+       ================================================= */
+    .logo-wm {
+      position: absolute;
+      left: clamp(1.5rem, 3cqw, 3.5rem);
+      bottom: clamp(0.9rem, 1.8cqh, 1.8rem);
+      display: flex;
+      align-items: center;
+      gap: clamp(6px, 0.7cqw, 10px);
+      z-index: 10;
+    }
+    .logo-wm img { height: clamp(22px, 3.2cqh, 36px); width: auto; }
+    .logo-wm .co-name { display: flex; flex-direction: column; }
+    .logo-wm .co-cn {
+      font-family: var(--font-body);
+      font-size: clamp(0.56rem, 0.8cqw, 0.7rem);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: var(--text-primary);
+    }
+    .logo-wm .co-en {
+      font-family: var(--font-display);
+      font-size: clamp(0.42rem, 0.58cqw, 0.52rem);
+      color: var(--brand-green);
+      letter-spacing: 0.14em;
+      font-weight: 500;
+    }
+
+    /* ===================================================
+       PAGE INDEX (injected by JS)
+       ================================================= */
+    .page-idx {
+      position: absolute;
+      right: clamp(1.5rem, 3cqw, 3.5rem);
+      bottom: clamp(0.9rem, 1.8cqh, 1.8rem);
+      display: flex;
+      align-items: center;
+      gap: clamp(6px, 0.8cqw, 10px);
+      z-index: 10;
+    }
+    .page-idx .bar {
+      width: clamp(20px, 2.5cqw, 36px); height: 2px;
+      background: var(--brand-green); border-radius: 1px;
+    }
+    .page-idx .nums {
+      font-family: var(--font-display);
+      font-size: clamp(0.58rem, 0.78cqw, 0.7rem);
+      font-weight: 700;
+      color: var(--text-tertiary);
+      letter-spacing: 0.06em;
+    }
+    .page-idx .nums .cur { color: var(--text-primary); }
+
+    /* ===================================================
+       ENTRANCE ANIMATIONS
+       ================================================= */
+    .reveal {
+      opacity: 0;
+      transform: translateY(14px);
+      transition: opacity var(--duration) var(--ease-out-expo),
+                  transform var(--duration) var(--ease-out-expo);
+    }
+    .slide.visible .reveal { opacity: 1; transform: translateY(0); }
+    .reveal:nth-child(1) { transition-delay: 0.05s; }
+    .reveal:nth-child(2) { transition-delay: 0.12s; }
+    .reveal:nth-child(3) { transition-delay: 0.19s; }
+    .reveal:nth-child(4) { transition-delay: 0.26s; }
+    .reveal:nth-child(5) { transition-delay: 0.33s; }
+    .reveal:nth-child(6) { transition-delay: 0.40s; }
+
+    .reveal-item {
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.42s var(--ease-out-expo),
+                  transform 0.42s var(--ease-out-expo);
+    }
+    .slide.visible .reveal-item { opacity: 1; transform: translateY(0); }
+    .reveal-item:nth-child(1) { transition-delay: 0.10s; }
+    .reveal-item:nth-child(2) { transition-delay: 0.18s; }
+    .reveal-item:nth-child(3) { transition-delay: 0.26s; }
+    .reveal-item:nth-child(4) { transition-delay: 0.34s; }
+    .reveal-item:nth-child(5) { transition-delay: 0.42s; }
+    .reveal-item:nth-child(6) { transition-delay: 0.50s; }
+
+    /* ===================================================
+       COVER SLIDE
+       ================================================= */
+    .cover {
+      grid-template-rows: 1fr;
+      align-content: center;
+    }
+    .cover-body {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: clamp(0.7rem, 1.1cqw, 1.1rem);
+    }
+    .cover h1 { font-size: clamp(2.4rem, 5.2cqw, 4.8rem); }
+    .cover-meta {
+      display: flex;
+      align-items: center;
+      gap: clamp(0.8rem, 1.2cqw, 1.2rem);
+      padding-top: clamp(0.4rem, 0.8cqw, 0.8rem);
+    }
+    .cover-meta::before {
+      content: ''; display: block;
+      width: 2px; height: clamp(28px, 4cqh, 48px);
+      background: var(--brand-green); border-radius: 1px; flex-shrink: 0;
+    }
+    .cover-meta p { font-size: clamp(0.68rem, 0.95cqw, 0.85rem); }
+
+    /* ===================================================
+       CLOSING SLIDE
+       ================================================= */
+    .closing {
+      grid-template-rows: 1fr;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      gap: clamp(1rem, 1.8cqw, 1.8rem);
+      padding: clamp(2rem, 4.5cqw, 4.5rem);
+      padding-bottom: calc(clamp(2rem, 4.5cqw, 4.5rem) + clamp(44px, 6.5cqh, 72px));
+      background: var(--bg-primary);
+    }
+    .closing h1 { font-size: clamp(2rem, 4.5cqw, 4.2rem); }
+    .closing h1 em { font-style: normal; color: var(--brand-green); }
+    .closing p { max-width: 55cqw; color: var(--text-secondary); }
+    .c-cta {
+      display: inline-flex; align-items: center;
+      gap: clamp(6px, 0.8cqw, 10px);
+      padding: clamp(8px, 1.1cqh, 14px) clamp(18px, 2.5cqw, 32px);
+      border: 2px solid var(--brand-green);
+      border-radius: 999px;
+      background: var(--brand-green-soft);
+      color: var(--brand-green-dark);
+      font-family: var(--font-display);
+      font-size: clamp(0.7rem, 1cqw, 0.88rem);
+      font-weight: 700; letter-spacing: 0.04em;
+      cursor: pointer;
+    }
+    .c-cta svg {
+      width: clamp(13px, 1.4cqw, 17px); height: clamp(13px, 1.4cqw, 17px);
+      stroke: currentColor; fill: none; stroke-width: 2.5;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* ===================================================
+       CARDS & GRIDS
+       ================================================= */
+    .card-grid { display: grid; gap: clamp(0.6rem, 1cqw, 1rem); }
+    .card-grid.cols-3 { grid-template-columns: repeat(3, 1fr); }
+    .card-grid.cols-2 { grid-template-columns: repeat(2, 1fr); }
+    .card-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+    /* Dense 6-card grid: compact padding + smaller body text */
+    .card-grid.dense .card {
+      padding: clamp(0.65rem, 1cqw, 1rem);
+      gap: clamp(0.3rem, 0.5cqw, 0.5rem);
+    }
+    .card-grid.dense p {
+      font-size: clamp(0.6rem, 0.82cqw, 0.74rem);
+      line-height: 1.5;
+    }
+    .card-grid.dense .feat-icon {
+      width: clamp(24px, 2.8cqw, 38px); height: clamp(24px, 2.8cqw, 38px);
+    }
+    .card-grid.dense .feat-icon svg {
+      width: clamp(12px, 1.4cqw, 18px); height: clamp(12px, 1.4cqw, 18px);
+    }
+    .card-grid.dense h3 {
+      font-size: clamp(0.75rem, 1.1cqw, 1rem);
+    }
+
+    .card {
+      background: var(--bg-secondary);
+      border-radius: clamp(8px, 1cqw, 14px);
+      padding: clamp(1rem, 1.6cqw, 1.6rem);
+      border: 1px solid var(--divider);
+      display: flex; flex-direction: column;
+      gap: clamp(0.45rem, 0.7cqw, 0.7rem);
+    }
+    .card.green-accent {
+      border-left: 3px solid var(--brand-green);
+      background: var(--brand-green-ultra);
+      border-top: 1px solid var(--divider);
+      border-right: 1px solid var(--divider);
+      border-bottom: 1px solid var(--divider);
+    }
+    .card.navy-accent {
+      border-left: 3px solid var(--accent-navy);
+      background: var(--accent-navy-ultra);
+      border-top: 1px solid var(--divider-cool);
+      border-right: 1px solid var(--divider-cool);
+      border-bottom: 1px solid var(--divider-cool);
+    }
+    .card-head { display: flex; align-items: center; gap: clamp(0.5rem, 0.8cqw, 0.8rem); }
+
+    /* ===================================================
+       FEATURE ICONS (Lucide SVG)
+       ================================================= */
+    .feat-icon {
+      width: clamp(30px, 3.8cqw, 50px); height: clamp(30px, 3.8cqw, 50px);
+      border-radius: clamp(7px, 0.9cqw, 12px);
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .feat-icon.green { background: var(--brand-green-soft); color: var(--brand-green-dark); }
+    .feat-icon.navy  { background: var(--accent-navy-soft); color: var(--accent-navy-dark); }
+    .feat-icon svg {
+      width: clamp(15px, 1.7cqw, 22px); height: clamp(15px, 1.7cqw, 22px);
+      stroke: currentColor; fill: none; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* ===================================================
+       STAT BLOCKS
+       ================================================= */
+    .stat-row { display: flex; gap: clamp(1.5rem, 2.5cqw, 3rem); flex-wrap: wrap; }
+    .stat-block { display: flex; flex-direction: column; gap: clamp(2px, 0.3cqw, 5px); }
+    .stat-num {
+      font-family: var(--font-display);
+      font-size: clamp(1.8rem, 3.8cqw, 3.4rem);
+      font-weight: 800; line-height: 1;
+    }
+    .stat-num.green { color: var(--brand-green); }
+    .stat-num.navy  { color: var(--accent-navy); }
+    .stat-label { font-size: clamp(0.62rem, 0.85cqw, 0.76rem); color: var(--text-secondary); }
+
+    /* ===================================================
+       PILLS / TAGS
+       ================================================= */
+    .pill {
+      display: inline-flex; align-items: center;
+      gap: clamp(3px, 0.4cqw, 5px);
+      padding: clamp(3px, 0.4cqh, 5px) clamp(8px, 1cqw, 13px);
+      border-radius: 999px;
+      font-size: clamp(0.58rem, 0.8cqw, 0.72rem);
+      font-weight: 600; letter-spacing: 0.04em;
+    }
+    .pill.green { background: var(--brand-green-soft); color: var(--brand-green-dark); }
+    .pill.navy  { background: var(--accent-navy-soft); color: var(--accent-navy-dark); }
+
+    /* ===================================================
+       TWO-COLUMN LAYOUT
+       ================================================= */
+    .two-col {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: clamp(1.2rem, 2cqw, 2.5rem); align-items: start;
+    }
+    .two-col.r46 { grid-template-columns: 4fr 6fr; }
+    .two-col.r64 { grid-template-columns: 6fr 4fr; }
+    .two-col.r55 { grid-template-columns: 1fr 1fr; }
+
+    /* ===================================================
+       CHECK LIST
+       ================================================= */
+    .check-list { display: flex; flex-direction: column; gap: clamp(0.5rem, 0.85cqw, 0.85rem); }
+    .check-list li {
+      display: flex; align-items: flex-start;
+      gap: clamp(0.45rem, 0.7cqw, 0.7rem);
+      font-size: clamp(0.7rem, 1cqw, 0.88rem);
+      color: var(--text-secondary); line-height: 1.55;
+    }
+    .check-list li .li-dot {
+      flex-shrink: 0;
+      width: clamp(14px, 1.5cqw, 19px); height: clamp(14px, 1.5cqw, 19px);
+      margin-top: 1px; color: var(--brand-green);
+    }
+    .check-list li .li-dot svg {
+      width: 100%; height: 100%;
+      stroke: currentColor; fill: none; stroke-width: 2.5;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+    .check-list li strong { color: var(--text-primary); }
+
+    /* ===================================================
+       STEP / PROCESS
+       ================================================= */
+    .step-row { display: flex; gap: clamp(0.6rem, 1cqw, 1rem); align-items: stretch; }
+    .step {
+      flex: 1;
+      display: flex; flex-direction: column;
+      gap: clamp(0.4rem, 0.7cqw, 0.7rem);
+      padding: clamp(0.9rem, 1.5cqw, 1.5rem);
+      background: var(--bg-secondary);
+      border-radius: clamp(8px, 1cqw, 14px);
+      border: 1px solid var(--divider);
+      position: relative;
+    }
+    .step.green-top { border-top: 3px solid var(--brand-green); }
+    .step.navy-top  { border-top: 3px solid var(--accent-navy); }
+    .step-num {
+      font-family: var(--font-display);
+      font-size: clamp(1.4rem, 2.8cqw, 2.4rem);
+      font-weight: 800; line-height: 1;
+      opacity: 0.2;
+    }
+    .step-num.green { color: var(--brand-green); }
+    .step-num.navy  { color: var(--accent-navy); }
+
+    /* Arrow connector between steps */
+    .step-arrow {
+      display: flex; align-items: center; padding-top: clamp(1.5rem, 3cqh, 3rem);
+      color: var(--text-tertiary);
+    }
+    .step-arrow svg {
+      width: clamp(12px, 1.4cqw, 18px); height: clamp(12px, 1.4cqw, 18px);
+      stroke: currentColor; fill: none; stroke-width: 2;
+      stroke-linecap: round; stroke-linejoin: round;
+    }
+
+    /* ===================================================
+       QUOTE BLOCK
+       ================================================= */
+    .quote-block {
+      border-left: 3px solid var(--brand-green);
+      padding-left: clamp(0.9rem, 1.3cqw, 1.3rem);
+    }
+    .quote-block p {
+      font-size: clamp(0.82rem, 1.15cqw, 1rem);
+      color: var(--text-primary); line-height: 1.65; font-style: italic;
+    }
+    .quote-attr {
+      margin-top: clamp(0.4rem, 0.6cqw, 0.6rem);
+      font-size: clamp(0.58rem, 0.75cqw, 0.68rem);
+      color: var(--text-tertiary); font-style: normal;
+    }
+
+    /* ===================================================
+       HIGHLIGHT BOX
+       ================================================= */
+    .hl {
+      padding: clamp(0.65rem, 1cqw, 1rem) clamp(0.9rem, 1.3cqw, 1.3rem);
+      border-radius: clamp(6px, 0.8cqw, 10px);
+    }
+    .hl.green { border-left: 3px solid var(--brand-green); background: var(--brand-green-ultra); }
+    .hl.navy  { border-left: 3px solid var(--accent-navy); background: var(--accent-navy-ultra); }
+    .hl p { font-size: clamp(0.68rem, 0.95cqw, 0.85rem); color: var(--text-primary); }
+
+    /* ===================================================
+       AGENDA LIST
+       ================================================= */
+    .agenda-list { display: flex; flex-direction: column; gap: clamp(0.45rem, 0.8cqw, 0.8rem); }
+    .agenda-item {
+      display: flex; align-items: center;
+      gap: clamp(0.7rem, 1.1cqw, 1.1rem);
+      padding: clamp(0.55rem, 0.9cqw, 0.9rem) clamp(0.8rem, 1.2cqw, 1.2rem);
+      background: var(--bg-secondary);
+      border-radius: clamp(6px, 0.8cqw, 10px);
+      border: 1px solid var(--divider);
+    }
+    .agenda-num {
+      font-family: var(--font-display);
+      font-size: clamp(1rem, 1.8cqw, 1.6rem);
+      font-weight: 800; color: var(--brand-green); opacity: 0.3;
+      min-width: clamp(1.8rem, 2.2cqw, 2.5rem);
+    }
+    .agenda-title {
+      font-family: var(--font-display);
+      font-size: clamp(0.75rem, 1.05cqw, 0.92rem);
+      font-weight: 600; color: var(--text-primary);
+    }
+    .agenda-desc { font-size: clamp(0.62rem, 0.82cqw, 0.72rem); color: var(--text-tertiary); }
+
+    /* ===================================================
+       HORIZONTAL DIVIDER
+       ================================================= */
+    .hdivider { width: 100%; height: 1px; background: var(--divider); flex-shrink: 0; }
+
+    /* ===================================================
+       INLINE EDIT MODE
+       ================================================= */
+    [contenteditable] { outline: none; cursor: inherit; }
+    body.edit-mode [contenteditable]:hover {
+      background: rgba(0,167,88,0.07); border-radius: 4px; cursor: text;
+    }
+    body.edit-mode [contenteditable]:focus {
+      background: rgba(0,167,88,0.12); border-radius: 4px;
+    }
+    #edit-badge {
+      position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
+      background: var(--brand-green); color: #fff;
+      font-family: var(--font-display); font-size: clamp(0.6rem, 0.9vw, 0.72rem);
+      font-weight: 700; padding: 4px 16px; border-radius: 999px;
+      z-index: 9999; opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    body.edit-mode #edit-badge { opacity: 1; }
+
+    /* ===================================================
+       NAV DOTS
+       ================================================= */
+    #nav-dots {
+      position: fixed; right: clamp(8px, 1vw, 14px); top: 50%;
+      transform: translateY(-50%);
+      display: flex; flex-direction: column; gap: clamp(5px, 0.6vw, 8px);
+      z-index: 100;
+    }
+    .dot {
+      width: clamp(5px, 0.5vw, 7px); height: clamp(5px, 0.5vw, 7px);
+      border-radius: 50%; background: var(--divider); cursor: pointer;
+      transition: background 0.25s, transform 0.25s;
+    }
+    .dot.active { background: var(--brand-green); transform: scale(1.4); }
+  </style>
+</head>
+<body>
+
+<div id="edit-badge">编辑模式 — 点击文字开始编辑 · Ctrl+S 保存</div>
+<nav id="nav-dots"></nav>
+
+<div class="deck" id="deck">
+
+  <!-- ======================================================
+       SLIDE 01 — COVER
+       ====================================================== -->
+  <section class="slide cover" id="s1" data-idx="1">
+    <div class="cover-body">
+      <span class="eyebrow reveal" contenteditable="false">中宏保险 · 数字化战略路演</span>
+      <h1 class="reveal" contenteditable="false">理解 <em>Skills</em><br>智能体能力模块<br>的概念与实践</h1>
+      <div class="brand-rule reveal"></div>
+      <div class="cover-meta reveal">
+        <p contenteditable="false">面向：战略合作伙伴 &nbsp;·&nbsp; 汇报人：数字化转型团队<br>2026 年 5 月</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SLIDE 02 — AGENDA
+       ====================================================== -->
+  <section class="slide" id="s2" data-idx="2">
+    <div class="slide-header">
+      <span class="eyebrow reveal" contenteditable="false">目录</span>
+      <h2 class="reveal" contenteditable="false">今日议程</h2>
+      <div class="brand-rule reveal"></div>
+    </div>
+    <div class="slide-body">
+      <div class="agenda-list">
+        <div class="agenda-item reveal-item">
+          <span class="agenda-num">01</span>
+          <div>
+            <div class="agenda-title" contenteditable="false">什么是 Skill？</div>
+            <div class="agenda-desc" contenteditable="false">定义、起源与核心理念</div>
+          </div>
+          <span class="pill green" style="margin-left:auto">概念</span>
+        </div>
+        <div class="agenda-item reveal-item">
+          <span class="agenda-num">02</span>
+          <div>
+            <div class="agenda-title" contenteditable="false">Skill 的三层架构</div>
+            <div class="agenda-desc" contenteditable="false">知识库 · 工具集 · 工作流程</div>
+          </div>
+          <span class="pill navy" style="margin-left:auto">架构</span>
+        </div>
+        <div class="agenda-item reveal-item">
+          <span class="agenda-num">03</span>
+          <div>
+            <div class="agenda-title" contenteditable="false">保险行业落地场景</div>
+            <div class="agenda-desc" contenteditable="false">核保、客服、培训、合规六大场景</div>
+          </div>
+          <span class="pill green" style="margin-left:auto">实践</span>
+        </div>
+        <div class="agenda-item reveal-item">
+          <span class="agenda-num">04</span>
+          <div>
+            <div class="agenda-title" contenteditable="false">中宏的 Skills 战略</div>
+            <div class="agenda-desc" contenteditable="false">现有积累、实施路径与合作展望</div>
+          </div>
+          <span class="pill navy" style="margin-left:auto">战略</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SLIDE 03 — WHAT IS A SKILL
+       ====================================================== -->
+  <section class="slide" id="s3" data-idx="3">
+    <div class="slide-header">
+      <span class="eyebrow reveal" contenteditable="false">第一章 · 概念</span>
+      <h2 class="reveal" contenteditable="false">什么是 Skill？</h2>
+      <div class="brand-rule reveal"></div>
+    </div>
+    <div class="slide-body">
+      <div class="two-col r46">
+        <!-- LEFT: quote + highlight -->
+        <div style="display:flex;flex-direction:column;gap:clamp(0.7rem,1.1cqw,1.1rem)">
+          <div class="quote-block reveal">
+            <p contenteditable="false">"Skill 是面向 AI 智能体的<strong>模块化能力包</strong>——它把领域知识、调用工具与工作流程封装成一个可插拔、可复用的标准单元。"</p>
+            <div class="quote-attr" contenteditable="false">— AI Agent 设计哲学 · Anthropic</div>
+          </div>
+          <div class="hl green reveal">
+            <p contenteditable="false"><strong>类比手机 App：</strong>每个 Skill 是一个功能单元，AI 智能体按需加载，无需了解内部实现细节。</p>
+          </div>
+        </div>
+        <!-- RIGHT: 3 property cards -->
+        <div style="display:flex;flex-direction:column;gap:clamp(0.55rem,0.9cqw,0.9rem)">
+          <div class="card reveal-item">
+            <div class="card-head">
+              <div class="feat-icon green">
+                <!-- Lucide: layers -->
+                <svg viewBox="0 0 24 24"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+              </div>
+              <h3 contenteditable="false">封装性</h3>
+            </div>
+            <p contenteditable="false">把专业知识、提示词与工具调用封装为单一接口，智能体只需"调用"，无需理解内部。</p>
+          </div>
+          <div class="card reveal-item">
+            <div class="card-head">
+              <div class="feat-icon navy">
+                <!-- Lucide: copy -->
+                <svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+              </div>
+              <h3 contenteditable="false">可复用性</h3>
+            </div>
+            <p contenteditable="false">一次构建，多次复用。同一 Skill 可服务于多个智能体与场景，降低重复研发成本。</p>
+          </div>
+          <div class="card reveal-item">
+            <div class="card-head">
+              <div class="feat-icon green">
+                <!-- Lucide: puzzle -->
+                <svg viewBox="0 0 24 24"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" y1="8" x2="2" y2="22"/><line x1="17.5" y1="15" x2="9" y2="15"/></svg>
+              </div>
+              <h3 contenteditable="false">可组合性</h3>
+            </div>
+            <p contenteditable="false">多个 Skills 自由组合，像积木一样拼装出更复杂的智能工作流与端到端解决方案。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SLIDE 04 — THREE-LAYER ARCHITECTURE
+       ====================================================== -->
+  <section class="slide" id="s4" data-idx="4">
+    <div class="slide-header">
+      <span class="eyebrow reveal" contenteditable="false">第一章 · 架构</span>
+      <h2 class="reveal" contenteditable="false">Skill 的三层架构</h2>
+      <div class="brand-rule reveal"></div>
+    </div>
+    <div class="slide-body">
+      <div class="step-row reveal">
+        <!-- Layer 1 -->
+        <div class="step green-top">
+          <div class="feat-icon green" style="margin-bottom:clamp(2px,0.3cqw,4px)">
+            <!-- Lucide: book-open -->
+            <svg viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          </div>
+          <h3 contenteditable="false">知识层</h3>
+          <p contenteditable="false">领域专业知识库、产品手册、法规文件、历史案例——构成 Skill 的"大脑"，决定其能回答什么、理解什么。</p>
+          <span class="pill green" style="align-self:flex-start;margin-top:auto">Domain Knowledge</span>
+        </div>
+        <!-- Arrow -->
+        <div class="step-arrow">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <!-- Layer 2 -->
+        <div class="step navy-top">
+          <div class="feat-icon navy" style="margin-bottom:clamp(2px,0.3cqw,4px)">
+            <!-- Lucide: wrench -->
+            <svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+          </div>
+          <h3 contenteditable="false">工具层</h3>
+          <p contenteditable="false">可调用的外部工具集——API 接口、数据库查询、文档生成器、计算引擎——让 Skill 具备真实的"执行力"。</p>
+          <span class="pill navy" style="align-self:flex-start;margin-top:auto">Tool Calling</span>
+        </div>
+        <!-- Arrow -->
+        <div class="step-arrow">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <!-- Layer 3 -->
+        <div class="step green-top">
+          <div class="feat-icon green" style="margin-bottom:clamp(2px,0.3cqw,4px)">
+            <!-- Lucide: git-branch -->
+            <svg viewBox="0 0 24 24"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
+          </div>
+          <h3 contenteditable="false">流程层</h3>
+          <p contenteditable="false">编排好的工作流逻辑——判断条件、多步调用顺序、结果汇总——将知识与工具连接为可重复执行的完整流程。</p>
+          <span class="pill green" style="align-self:flex-start;margin-top:auto">Workflow</span>
+        </div>
+      </div>
+      <div class="hl navy reveal">
+        <p contenteditable="false"><strong>核心价值：</strong>三层分离使 Skill 高度可维护——更新知识库不影响工具调用，替换工具不影响业务流程，迭代成本极低。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SLIDE 05 — HOW A SKILL WORKS
+       ====================================================== -->
+  <section class="slide" id="s5" data-idx="5">
+    <div class="slide-header">
+      <span class="eyebrow reveal" contenteditable="false">第一章 · 原理</span>
+      <h2 class="reveal" contenteditable="false">Skill 的工作原理</h2>
+      <div class="brand-rule reveal"></div>
+    </div>
+    <div class="slide-body">
+      <div class="two-col r46">
+        <!-- Left: process steps -->
+        <div style="display:flex;flex-direction:column;gap:clamp(0.6rem,1cqw,1rem)">
+          <div class="step green-top reveal-item" style="flex-direction:row;align-items:flex-start;gap:clamp(0.6rem,1cqw,1rem)">
+            <div class="step-num green">01</div>
+            <div>
+              <h3 contenteditable="false">用户发起请求</h3>
+              <p contenteditable="false">智能体接收自然语言指令，识别意图，匹配最适合的 Skill 模块。</p>
+            </div>
+          </div>
+          <div class="step navy-top reveal-item" style="flex-direction:row;align-items:flex-start;gap:clamp(0.6rem,1cqw,1rem)">
+            <div class="step-num navy">02</div>
+            <div>
+              <h3 contenteditable="false">Skill 内部推理</h3>
+              <p contenteditable="false">Skill 在知识层检索相关内容，调用工具层执行计算或查询，通过流程层组织输出。</p>
+            </div>
+          </div>
+          <div class="step green-top reveal-item" style="flex-direction:row;align-items:flex-start;gap:clamp(0.6rem,1cqw,1rem)">
+            <div class="step-num green">03</div>
+            <div>
+              <h3 contenteditable="false">结构化结果返回</h3>
+              <p contenteditable="false">Skill 将结果按标准格式返回给智能体，智能体整合后呈现给用户或触发下游流程。</p>
+            </div>
+          </div>
+        </div>
+        <!-- Right: insight boxes -->
+        <div style="display:flex;flex-direction:column;gap:clamp(0.7rem,1.1cqw,1.1rem)">
+          <div class="hl green reveal">
+            <p contenteditable="false"><strong>上下文隔离：</strong>每次 Skill 调用都在独立上下文中执行，互不干扰，保证输出的稳定性与可预测性。</p>
+          </div>
+          <div class="hl navy reveal">
+            <p contenteditable="false"><strong>可观测性：</strong>Skill 的每个执行步骤均可记录日志，支持审计追踪——这对于金融监管合规尤为关键。</p>
+          </div>
+          <div class="card reveal">
+            <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.2rem">
+              <div class="feat-icon green">
+                <!-- Lucide: shield-check -->
+                <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+              </div>
+              <h3 contenteditable="false">人机协同</h3>
+            </div>
+            <p contenteditable="false">Skill 不替代人工判断——它加速信息处理，最终决策权始终保留在人手中，符合监管要求。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SLIDE 06 — INDUSTRY USE CASES
+       ====================================================== -->
+  <section class="slide" id="s6" data-idx="6">
+    <div class="slide-header">
+      <span class="eyebrow reveal" contenteditable="false">第二章 · 实践</span>
+      <h2 class="reveal" contenteditable="false">保险行业六大落地场景</h2>
+      <div class="brand-rule reveal"></div>
+    </div>
+    <div class="slide-body">
+      <div class="card-grid cols-3 dense reveal">
+        <!-- Card 1 -->
+        <div class="card green-accent">
+          <div class="card-head">
+            <div class="feat-icon green">
+              <!-- Lucide: file-check -->
+              <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><polyline points="9 15 11 17 15 13"/></svg>
+            </div>
+            <h3 contenteditable="false">智能核保</h3>
+          </div>
+          <p contenteditable="false">读取健康问卷与既往病历，自动评估风险等级，生成核保建议，将核保时长从天级压缩至分钟级。</p>
+        </div>
+        <!-- Card 2 -->
+        <div class="card navy-accent">
+          <div class="card-head">
+            <div class="feat-icon navy">
+              <!-- Lucide: bar-chart-2 -->
+              <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
+            <h3 contenteditable="false">产品推荐</h3>
+          </div>
+          <p contenteditable="false">基于客户年龄、收入、家庭结构与保障缺口，实时生成个性化产品组合方案，提升成交转化率。</p>
+        </div>
+        <!-- Card 3 -->
+        <div class="card green-accent">
+          <div class="card-head">
+            <div class="feat-icon green">
+              <!-- Lucide: message-circle -->
+              <svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <h3 contenteditable="false">智能客服</h3>
+          </div>
+          <p contenteditable="false">7×24 小时响应保单查询、理赔进度、条款解读，准确率达 95% 以上，将人工坐席从重复问题中解放。</p>
+        </div>
+        <!-- Card 4 -->
+        <div class="card navy-accent">
+          <div class="card-head">
+            <div class="feat-icon navy">
+              <!-- Lucide: activity -->
+              <svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <h3 contenteditable="false">理赔辅助</h3>
+          </div>
+          <p contenteditable="false">自动解析理赔材料，核对保单条款，标记高风险案件供人工复核，将理赔处理效率提升 40%。</p>
+        </div>
+        <!-- Card 5 -->
+        <div class="card green-accent">
+          <div class="card-head">
+            <div class="feat-icon green">
+              <!-- Lucide: graduation-cap -->
+              <svg viewBox="0 0 24 24"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg>
+            </div>
+            <h3 contenteditable="false">代理人培训</h3>
+          </div>
+          <p contenteditable="false">生成情景模拟对话，基于代理人弱项推送定制学习内容，使新人达标周期缩短 30%。</p>
+        </div>
+        <!-- Card 6 -->
+        <div class="card navy-accent">
+          <div class="card-head">
+            <div class="feat-icon navy">
+              <!-- Lucide: shield -->
+              <svg viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h3 contenteditable="false">合规审查</h3>
+          </div>
+          <p contenteditable="false">实时扫描销售话术与营销材料，比对监管要求，自动标记违规风险点，确保合规一致性。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SLIDE 07 — KEY VALUE PROPOSITIONS (STATS)
+       ====================================================== -->
+  <section class="slide" id="s7" data-idx="7">
+    <div class="slide-header">
+      <span class="eyebrow reveal" contenteditable="false">第二章 · 价值</span>
+      <h2 class="reveal" contenteditable="false">Skills 带来的核心价值</h2>
+      <div class="brand-rule reveal"></div>
+    </div>
+    <div class="slide-body">
+      <div class="stat-row reveal">
+        <div class="stat-block">
+          <div class="stat-num green" contenteditable="false">5×</div>
+          <div class="stat-label" contenteditable="false">单位时间处理效率提升</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num navy" contenteditable="false">60%</div>
+          <div class="stat-label" contenteditable="false">重复性人工工作减少</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num green" contenteditable="false">95%</div>
+          <div class="stat-label" contenteditable="false">输出质量一致性</div>
+        </div>
+        <div class="stat-block">
+          <div class="stat-num navy" contenteditable="false">3周</div>
+          <div class="stat-label" contenteditable="false">新 Skill 平均上线周期</div>
+        </div>
+      </div>
+      <div class="hdivider reveal"></div>
+      <div class="card-grid cols-2 reveal">
+        <div class="card green-accent">
+          <div class="card-head">
+            <div class="feat-icon green">
+              <!-- Lucide: trending-up -->
+              <svg viewBox="0 0 24 24"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+            </div>
+            <h3 contenteditable="false">规模化不失质量</h3>
+          </div>
+          <p contenteditable="false">Skill 的标准化输出确保业务量扩大 10 倍时，服务质量与合规水准保持不变——这是人工无法复制的稳定性。</p>
+        </div>
+        <div class="card navy-accent">
+          <div class="card-head">
+            <div class="feat-icon navy">
+              <!-- Lucide: refresh-cw -->
+              <svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+            </div>
+            <h3 contenteditable="false">快速迭代响应市场</h3>
+          </div>
+          <p contenteditable="false">监管政策调整只需更新知识层，新产品上市只需添加产品文档——无需重构系统，灵活应对市场变化。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SLIDE 08 — MANULIFE-SINOCHEM PRACTICE
+       ====================================================== -->
+  <section class="slide" id="s8" data-idx="8">
+    <div class="slide-header">
+      <span class="eyebrow reveal" contenteditable="false">第三章 · 中宏实践</span>
+      <h2 class="reveal" contenteditable="false">中宏保险的 Skills 探索</h2>
+      <div class="brand-rule reveal"></div>
+    </div>
+    <div class="slide-body">
+      <div class="two-col r55">
+        <!-- Left: already done -->
+        <div style="display:flex;flex-direction:column;gap:clamp(0.6rem,1cqw,1rem)">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.1rem">
+            <span class="pill green">已落地</span>
+            <span style="font-size:clamp(0.65rem,0.9cqw,0.8rem);color:var(--text-tertiary)" contenteditable="false">2024–2025</span>
+          </div>
+          <ul class="check-list reveal">
+            <li>
+              <span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span contenteditable="false"><strong>演示文稿生成 Skill</strong> — 基于品牌规范自动生成合规 HTML/PPTX 演示，支持客户路演与培训场景</span>
+            </li>
+            <li>
+              <span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span contenteditable="false"><strong>产品知识问答 Skill</strong> — 覆盖全线产品条款查询，接入内部知识库，准确率 96%+</span>
+            </li>
+            <li>
+              <span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span contenteditable="false"><strong>合同摘要 Skill</strong> — 自动提取保单关键条款，生成结构化摘要供代理人快速查阅</span>
+            </li>
+            <li>
+              <span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span>
+              <span contenteditable="false"><strong>培训内容个性化 Skill</strong> — 根据代理人绩效数据推送定制学习路径</span>
+            </li>
+          </ul>
+        </div>
+        <!-- Right: in progress / planned -->
+        <div style="display:flex;flex-direction:column;gap:clamp(0.6rem,1cqw,1rem)">
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.1rem">
+            <span class="pill navy">规划中</span>
+            <span style="font-size:clamp(0.65rem,0.9cqw,0.8rem);color:var(--text-tertiary)" contenteditable="false">2025–2026</span>
+          </div>
+          <ul class="check-list reveal">
+            <li>
+              <span class="li-dot" style="color:var(--accent-navy)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+              <span contenteditable="false"><strong>智能核保 Skill</strong> — 对接健康数据平台，实现毫秒级风险评估（试点阶段）</span>
+            </li>
+            <li>
+              <span class="li-dot" style="color:var(--accent-navy)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+              <span contenteditable="false"><strong>理赔材料审核 Skill</strong> — OCR + 语义理解双引擎，自动完成材料完整性核查</span>
+            </li>
+            <li>
+              <span class="li-dot" style="color:var(--accent-navy)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+              <span contenteditable="false"><strong>监管合规扫描 Skill</strong> — 实时比对银保监最新法规，标记话术风险点</span>
+            </li>
+            <li>
+              <span class="li-dot" style="color:var(--accent-navy)"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></span>
+              <span contenteditable="false"><strong>客户画像洞察 Skill</strong> — 整合 CRM 与行为数据，生成精准需求分析报告</span>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SLIDE 09 — IMPLEMENTATION ROADMAP
+       ====================================================== -->
+  <section class="slide" id="s9" data-idx="9">
+    <div class="slide-header">
+      <span class="eyebrow reveal" contenteditable="false">第三章 · 路径</span>
+      <h2 class="reveal" contenteditable="false">Skills 落地三阶段路径</h2>
+      <div class="brand-rule reveal"></div>
+    </div>
+    <div class="slide-body">
+      <div class="step-row reveal">
+        <!-- Phase 1 -->
+        <div class="step green-top" style="gap:clamp(0.5rem,0.8cqw,0.8rem)">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="pill green">第一阶段</span>
+            <span style="font-family:var(--font-display);font-size:clamp(0.6rem,0.8cqw,0.72rem);color:var(--text-tertiary)" contenteditable="false">0–3 月</span>
+          </div>
+          <h3 contenteditable="false">识别 · 场景梳理</h3>
+          <ul class="check-list">
+            <li><span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">业务流程访谈，绘制痛点地图</span></li>
+            <li><span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">筛选高价值、低风险的首批 Skill 场景</span></li>
+            <li><span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">确立成功指标与评估基准线</span></li>
+          </ul>
+        </div>
+        <!-- Arrow -->
+        <div class="step-arrow">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <!-- Phase 2 -->
+        <div class="step navy-top" style="gap:clamp(0.5rem,0.8cqw,0.8rem)">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="pill navy">第二阶段</span>
+            <span style="font-family:var(--font-display);font-size:clamp(0.6rem,0.8cqw,0.72rem);color:var(--text-tertiary)" contenteditable="false">3–9 月</span>
+          </div>
+          <h3 contenteditable="false">构建 · 试点验证</h3>
+          <ul class="check-list">
+            <li><span class="li-dot" style="color:var(--accent-navy)"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">搭建 Skill 开发框架与工程规范</span></li>
+            <li><span class="li-dot" style="color:var(--accent-navy)"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">发布首批 2–3 个核心 Skill 并内测</span></li>
+            <li><span class="li-dot" style="color:var(--accent-navy)"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">建立人工反馈循环与模型微调机制</span></li>
+          </ul>
+        </div>
+        <!-- Arrow -->
+        <div class="step-arrow">
+          <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+        <!-- Phase 3 -->
+        <div class="step green-top" style="gap:clamp(0.5rem,0.8cqw,0.8rem)">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span class="pill green">第三阶段</span>
+            <span style="font-family:var(--font-display);font-size:clamp(0.6rem,0.8cqw,0.72rem);color:var(--text-tertiary)" contenteditable="false">9–18 月</span>
+          </div>
+          <h3 contenteditable="false">扩展 · 规模部署</h3>
+          <ul class="check-list">
+            <li><span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">建立 Skill 市场，支持跨部门复用</span></li>
+            <li><span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">对接核心系统（CRM/核保/理赔）</span></li>
+            <li><span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">形成持续运营与治理体系</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SLIDE 10 — PARTNERSHIP MODEL
+       ====================================================== -->
+  <section class="slide" id="s10" data-idx="10">
+    <div class="slide-header">
+      <span class="eyebrow reveal" contenteditable="false">第四章 · 合作</span>
+      <h2 class="reveal" contenteditable="false">合作模式与下一步行动</h2>
+      <div class="brand-rule reveal"></div>
+    </div>
+    <div class="slide-body">
+      <div class="two-col r55">
+        <!-- Left: partnership modes -->
+        <div style="display:flex;flex-direction:column;gap:clamp(0.55rem,0.9cqw,0.9rem)">
+          <h3 style="color:var(--text-tertiary);font-size:clamp(0.65rem,0.88cqw,0.78rem);letter-spacing:0.1em;text-transform:uppercase;font-weight:600" contenteditable="false">合作模式</h3>
+          <div class="card reveal-item">
+            <div class="card-head">
+              <div class="feat-icon green">
+                <!-- Lucide: code-2 -->
+                <svg viewBox="0 0 24 24"><path d="M9 6l-6 6 6 6"/><path d="M15 6l6 6-6 6"/></svg>
+              </div>
+              <h3 contenteditable="false">技术共建</h3>
+            </div>
+            <p contenteditable="false">联合开发定制 Skill，合作方提供领域知识，中宏负责工程化落地与系统集成，成果双方共享。</p>
+          </div>
+          <div class="card reveal-item">
+            <div class="card-head">
+              <div class="feat-icon navy">
+                <!-- Lucide: users -->
+                <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+              </div>
+              <h3 contenteditable="false">Skill 采购</h3>
+            </div>
+            <p contenteditable="false">采购合作方成熟 Skill 模块，通过标准接口集成至中宏智能体平台，快速扩充能力版图。</p>
+          </div>
+        </div>
+        <!-- Right: next steps -->
+        <div style="display:flex;flex-direction:column;gap:clamp(0.55rem,0.9cqw,0.9rem)">
+          <h3 style="color:var(--text-tertiary);font-size:clamp(0.65rem,0.88cqw,0.78rem);letter-spacing:0.1em;text-transform:uppercase;font-weight:600" contenteditable="false">近期行动项</h3>
+          <div class="card reveal-item">
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              <span class="pill green">本月</span>
+            </div>
+            <ul class="check-list" style="margin-top:0.3rem">
+              <li><span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">完成业务场景优先级评估矩阵</span></li>
+              <li><span class="li-dot"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">成立跨部门 Skills 工作组</span></li>
+            </ul>
+          </div>
+          <div class="card reveal-item">
+            <div style="display:flex;align-items:center;gap:0.5rem">
+              <span class="pill navy">Q3</span>
+            </div>
+            <ul class="check-list" style="margin-top:0.3rem">
+              <li><span class="li-dot" style="color:var(--accent-navy)"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">发布 Skill 开发规范 v1.0</span></li>
+              <li><span class="li-dot" style="color:var(--accent-navy)"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></span><span contenteditable="false">完成首个合作伙伴 Skill 联调</span></li>
+            </ul>
+          </div>
+          <div class="hl green reveal">
+            <p contenteditable="false"><strong>下一步：</strong>我们邀请您参与 2026 年 6 月的 Skills 沙盒体验日，亲历智能体与 Skill 协作的完整流程。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================================================
+       SLIDE 11 — CLOSING
+       ====================================================== -->
+  <section class="slide closing" id="s11" data-idx="11">
+    <div class="brand-rule reveal" style="margin-bottom:clamp(0.5rem,0.8cqw,0.8rem)"></div>
+    <h1 class="reveal" contenteditable="false">让每一个专业能力<br>成为可复用的 <em>Skill</em></h1>
+    <p class="reveal" contenteditable="false">中宏保险持续探索人与 AI 协作的最佳实践，<br>诚邀志同道合的伙伴共同构建保险业的智能能力网络。</p>
+    <div class="c-cta reveal" contenteditable="false">
+      <svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+      预约深度交流
+    </div>
+    <div style="display:flex;gap:clamp(0.5rem,0.8cqw,0.8rem);flex-wrap:wrap;justify-content:center" class="reveal">
+      <span class="pill green">客户路演 2026.05</span>
+      <span class="pill navy">数字化转型团队</span>
+      <span class="pill green">中宏保险 · MANULIFE-SINOCHEM</span>
+    </div>
+  </section>
+
+</div><!-- /.deck -->
+
+<script>
+/* =====================================================
+   SINOCHEM SIGNATURE — PRESENTATION CONTROLLER
+   ===================================================== */
+
+/* --- Logo & page-index injection --- */
+const LOGO_SRC = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEwAAABYCAMAAABoDuGUAAADAFBMVEX+/v4EqUzY9OhGxomx6M8ou3KQ3LUSsFx01qkVtWab4sI5wH3F7ts6w4JlzpkAoTyU4L5o0J3I8N9BwX8AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD6xp00AAABAHRSTlP//////////////////////////wAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAPUZjQAAAAnxJREFUeNrNmet2rCAMhRsICN5mpn3/dz1TqmiiIBjWafPPpX7DZWcnOB8fvxJO0WuL9BqxggUU1gN9eQRbweoUZVHY2D1sOQvIyN4sAhs7KB7ZN2sPQ6Cwb1YpLLB2sMDawQKrEPbD2mA/rA2mAqsMtrAibGFF2OihHAYMZhhMQzlsmcRfginrWsH6qXuYJjDlwg61gKnX8n4DmPWrGMQwtT7bAGYBmsFmaAfThNWJdGbIsHpRBuxZBmXpNOwmaIW5uVsvrYSJ7jaWk7oGbiwrtqCYQtCL/UwnWfUwTM3xDiyqQsttG0kyCmFR+iiH4bnA7sHWK9+g1CnIV4QqmM0OrBKmcytWC1sf/pTBQhuKGY3tYZZ56Iulot57j8vDLDPkmRmhJlPGLMwyd5+Zq2oy6i7bUllWKmZm0RNdkiEHs6zuzKw+DvFkAWwNjjBWxB70Wf0YuF+7JIzf8synpk0Hz6u+T/E7Ln1CsxebWXfyiyNTwqD1UhiaNWRS2LMZzJFSLgy7iVYe7/KtfCsYhuxoBAtC+9KiMBfmekv1ugVsHdmzAQv5QVkSuuGSXbQD9wbWYpaf0HAvh2Nn9/RLuEpW9K99bevglnkrOHsv/oK/pVe2YgZuyGU7PKhzHacre4blEuka24YKlknPH0yJ/tQXQFqvsUF878L1nqKH9GmLHhLBFXpYOinx9Ih+9uD+MP+60nOQTgqHA6u8qc9c9BOJPVlZSz5XJMfFZxpE53ADKnTmWMRzO24OFcyY6V2DJnO80/XlWryKEj2iL+5Taiphtn8qtml1NdepyveWL5in0en6/he1PyXdrWmj1WbLf/CTk/bkCpf4z/8A/QNjsRY/65vlIwAAAABJRU5ErkJggg==';
+
+const slides  = document.querySelectorAll('.slide');
+const total   = slides.length;
+
+slides.forEach((slide, i) => {
+  const n = String(i + 1).padStart(2, '0');
+  const t = String(total).padStart(2, '0');
+
+  /* Logo watermark */
+  const wm = document.createElement('div');
+  wm.className = 'logo-wm';
+  wm.innerHTML = `
+    <img src="${LOGO_SRC}" alt="中宏保险" />
+    <div class="co-name">
+      <span class="co-cn">中宏保险</span>
+      <span class="co-en">MANULIFE-SINOCHEM</span>
+    </div>`;
+  slide.appendChild(wm);
+
+  /* Page index */
+  const pi = document.createElement('div');
+  pi.className = 'page-idx';
+  pi.innerHTML = `<div class="bar"></div><div class="nums"><span class="cur">${n}</span> / ${t}</div>`;
+  slide.appendChild(pi);
+});
+
+/* --- Nav dots --- */
+const navDots = document.getElementById('nav-dots');
+slides.forEach((slide, i) => {
+  const dot = document.createElement('div');
+  dot.className = 'dot';
+  dot.title = `第 ${i + 1} 页`;
+  dot.addEventListener('click', () => {
+    slide.scrollIntoView({ behavior: 'smooth' });
+  });
+  navDots.appendChild(dot);
+});
+
+/* --- Intersection observer: .visible class + active dot --- */
+const dots = navDots.querySelectorAll('.dot');
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('visible');
+      const idx = Array.from(slides).indexOf(entry.target);
+      dots.forEach((d, i) => d.classList.toggle('active', i === idx));
+    }
+  });
+}, { root: document.getElementById('deck'), threshold: 0.5 });
+
+slides.forEach(s => observer.observe(s));
+
+/* --- Keyboard navigation --- */
+document.addEventListener('keydown', e => {
+  const deck = document.getElementById('deck');
+  const current = Math.round(deck.scrollTop / deck.clientHeight);
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight' || e.key === ' ') {
+    e.preventDefault();
+    slides[Math.min(current + 1, total - 1)]?.scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') {
+    e.preventDefault();
+    slides[Math.max(current - 1, 0)]?.scrollIntoView({ behavior: 'smooth' });
+  } else if (e.key === 'e' || e.key === 'E') {
+    toggleEdit();
+  }
+});
+
+/* --- Inline edit mode --- */
+let editMode = false;
+function toggleEdit() {
+  editMode = !editMode;
+  document.body.classList.toggle('edit-mode', editMode);
+  document.querySelectorAll('[contenteditable]').forEach(el => {
+    el.contentEditable = editMode ? 'true' : 'false';
+  });
+  if (!editMode) saveToStorage();
+}
+
+function saveToStorage() {
+  const data = {};
+  document.querySelectorAll('[contenteditable]').forEach((el, i) => {
+    data[i] = el.innerHTML;
+  });
+  try { localStorage.setItem('skills-concept-ppt', JSON.stringify(data)); } catch(e) {}
+}
+
+function loadFromStorage() {
+  try {
+    const data = JSON.parse(localStorage.getItem('skills-concept-ppt') || 'null');
+    if (!data) return;
+    document.querySelectorAll('[contenteditable]').forEach((el, i) => {
+      if (data[i] !== undefined) el.innerHTML = data[i];
+    });
+  } catch(e) {}
+}
+
+document.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault();
+    saveToStorage();
+    /* Flash badge */
+    const badge = document.getElementById('edit-badge');
+    const orig = badge.textContent;
+    badge.textContent = '已保存 ✓';
+    setTimeout(() => { badge.textContent = orig; }, 1400);
+  }
+});
+
+/* Press E to toggle edit mode */
+document.addEventListener('keydown', e => {
+  if (e.key === 'e' && !e.ctrlKey && !e.metaKey && !['INPUT','TEXTAREA','[contenteditable=true]'].includes(document.activeElement?.tagName)) {
+    if (!document.activeElement?.isContentEditable) toggleEdit();
+  }
+});
+
+/* Restore on load */
+loadFromStorage();
+</script>
+</body>
+</html>
