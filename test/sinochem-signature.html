@@ -73,17 +73,23 @@
     }
     body { display: flex; align-items: center; justify-content: center; }
 
-    .deck {
+    .deck-shell {
+      position: relative;
       width:  min(100vw, calc(100vh * 16 / 9));
       height: min(100vh, calc(100vw * 9 / 16));
+      container-type: size;
+      container-name: deck;
+    }
+
+    .deck {
+      width: 100%;
+      height: 100%;
       overflow-y: auto;
       overflow-x: hidden;
       scroll-snap-type: y mandatory;
       scroll-behavior: smooth;
       background: var(--bg-primary);
       box-shadow: 0 0 0 1px rgba(0,0,0,0.08);
-      container-type: size;
-      container-name: deck;
     }
 
     /* 幻灯片基础：header(标题) / body(内容) / 留底 */
@@ -582,12 +588,13 @@
        NAV DOTS — 侧边导航点
     ============================================================ */
     .nav-dots {
-      position: fixed;
+      position: absolute;              /* inside .deck-shell — never bleeds outside 16:9 */
       right: clamp(6px, 1.2cqw, 14px);
       top: 50%; transform: translateY(-50%);
       display: flex; flex-direction: column;
       gap: clamp(5px, 0.9cqh, 9px);
       z-index: 999;
+      pointer-events: auto;
     }
     .nav-dot {
       width: clamp(7px, 0.7cqw, 9px); height: clamp(7px, 0.7cqw, 9px);
@@ -621,8 +628,8 @@
 
 <body>
 
-  <!-- 导航点（在 .deck 外，叠于 letterbox 之上） -->
-  <nav class="nav-dots" id="navDots" aria-label="幻灯片导航"></nav>
+  <!-- deck-shell: 16:9 尺寸定位容器，nav-dots 绝对定位在此内，不溢出到 letterbox -->
+  <div class="deck-shell">
 
   <!-- 16:9 画布 — 所有幻灯片在此容器内 -->
   <div class="deck" id="deck">
@@ -1036,6 +1043,10 @@
     </section>
 
   </div><!-- /.deck -->
+
+  <nav class="nav-dots" id="navDots" aria-label="幻灯片导航"></nav>
+
+  </div><!-- /.deck-shell -->
 
   <script>
     (() => {

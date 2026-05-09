@@ -377,8 +377,8 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
 <div style="display: flex; align-items: center; gap: 8px;">
   <img src="data:image/png;base64,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" alt="中宏保险" style="max-height: clamp(28px, 4vh, 44px); width: auto;" />
   <b class="company-name" style="display: inline-block; vertical-align: middle;">
-    <span style="display: block; font-size: 19px; color: #00A758; font-weight: bold; letter-spacing: 2px;">中宏保险</span>
-    <span style="display: block; font-size: 8px; color: #00A758; margin-top: 2px; font-weight: normal;">MANULIFE-SINOCHEM</span>
+    <span style="display: block; font-size: 18px; color: #00A758; font-weight: bold; letter-spacing: 2px;">中宏保险</span>
+    <span style="display: block; font-size: 8px; color: #00A758; font-weight: normal;">MANULIFE-SINOCHEM</span>
   </b>
 </div>
   ```
@@ -412,17 +412,26 @@ html, body {
 }
 body { display: flex; align-items: center; justify-content: center; }
 
-.deck {
+/* .deck-shell: 16:9 positioning anchor — nav-dots and any overlays sit
+   position:absolute INSIDE this element, never leaking into the letterbox. */
+.deck-shell {
+  position: relative;
   width:  min(100vw, calc(100vh * 16 / 9));
   height: min(100vh, calc(100vw * 9 / 16));
+  container-type: size;               /* enables cqw / cqh for all descendants */
+  container-name: deck;
+}
+
+/* .deck: scrollable slide canvas, 100% of .deck-shell */
+.deck {
+  width: 100%;
+  height: 100%;
   overflow-y: auto;
   overflow-x: hidden;                 /* prevent inner vw-sized elements from bleeding out */
   scroll-snap-type: y mandatory;
   scroll-behavior: smooth;
   background: var(--bg-primary);
   box-shadow: 0 0 0 1px rgba(0,0,0,0.08);  /* subtle border visible on white bg */
-  container-type: size;               /* enables cqw / cqh inside */
-  container-name: deck;
 }
 
 .slide {
@@ -463,9 +472,37 @@ img, .image-container {
   max-width: 100%;
   max-height: min(50cqh, 400px);
 }
+
+/* NAV DOTS — position:absolute inside .deck-shell, NEVER position:fixed.
+   position:fixed is relative to the browser viewport; when the browser is
+   wider than 16:9 the dots land in the white letterbox outside the slide.
+   position:absolute inside .deck-shell keeps them within the 16:9 canvas. */
+.nav-dots {
+  position: absolute;
+  right: clamp(6px, 1.2cqw, 14px);
+  top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column;
+  gap: clamp(5px, 0.9cqh, 9px);
+  z-index: 999;
+  pointer-events: auto;
+}
 ```
 
-**Inside slides, ALWAYS use `cqw`/`cqh` instead of `vw`/`vh`.** When the browser is wider than 16:9, `vw > cqw`, so any `vw`-sized element overflows the 16:9 deck and gets clipped. Before generating or editing, audit every `clamp()`, `min()`, `max()`, and standalone length that uses `vw`/`vh` and replace with the `cqw`/`cqh` equivalent. Pattern: `clamp(0.85rem, 1.2cqw, 1.05rem)`. The only exception is the `.deck` container itself (which correctly uses `vw`/`vh` to size against the browser).
+**Required HTML structure — nav-dots and progress bars go inside `.deck-shell`, not `<body>`:**
+```html
+<body>
+  <div class="deck-shell">          <!-- 16:9 size anchor + container-type -->
+    <div class="deck" id="deck">   <!-- scrollable canvas -->
+      <section class="slide">…</section>
+      <!-- more slides -->
+    </div>
+    <!-- nav-dots INSIDE .deck-shell so position:absolute keeps them within 16:9 -->
+    <nav class="nav-dots" id="navDots" aria-label="幻灯片导航"></nav>
+  </div>
+</body>
+```
+
+**Inside slides, ALWAYS use `cqw`/`cqh` instead of `vw`/`vh`.** When the browser is wider than 16:9, `vw > cqw`, so any `vw`-sized element overflows the 16:9 deck and gets clipped. Before generating or editing, audit every `clamp()`, `min()`, `max()`, and standalone length that uses `vw`/`vh` and replace with the `cqw`/`cqh` equivalent. Pattern: `clamp(0.85rem, 1.2cqw, 1.05rem)`. The only exceptions are `.deck-shell` itself (which correctly uses `vw`/`vh` to size against the browser) and `.deck` (100% of shell).
 
 **When to use this preset:**
 - 中宏保险内部分享、客户路演、合规培训
