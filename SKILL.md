@@ -1,13 +1,17 @@
 ---
 name: frontend-slides
-description: Create stunning, animation-rich HTML presentations from scratch or by converting PowerPoint files. This skill is exclusively for Manulife-Sinochem (中宏保险) internal use — always uses the Sinochem Signature preset. Use when the user wants to build a presentation, convert a PPT/PPTX to web, or create slides for a talk/pitch.
+description: Create 中宏保险 PPTX files and animation-rich HTML presentations. Default output for “中宏PPT / slides / 幻灯片” requests is a native PowerPoint via generate-pptx.js + the company template (Mode P) — no HTML step needed. HTML/web presentations are also supported (Mode H). Use for new decks, PPT-to-HTML conversion, or animated web slides.
 ---
 
-# Frontend Slides
+# 中宏保险 PPT & Slides Generator
 
-Create zero-dependency, animation-rich HTML presentations that run entirely in the browser.
+Generate native PPTX files (**Mode P**, default) or animation-rich HTML presentations (**Mode H**) for Manulife-Sinochem. **For any request that mentions PPT, PPTX, 幻灯片, slides, deck, or 演讲稿, use Mode P by default** — produce a native PowerPoint directly with no HTML step.
 
-## Core Principles
+---
+
+> **Mode H reference** — The sections below (Core Principles through Sinochem Signature Invariants) apply to **Mode H (HTML presentations)**. For Mode P (native PPTX), skip directly to Phase 0.
+
+## Core Principles (Mode H)
 
 1. **Zero Dependencies** — Single HTML files with inline CSS/JS. No npm, no build tools.
 2. **Show, Don't Tell** — Generate visual previews, not abstract choices. People discover what they want by seeing it.
@@ -67,11 +71,14 @@ These invariants apply to EVERY slide in EVERY presentation:
 
 Determine what the user wants:
 
-- **Mode A: New Presentation** — Create from scratch. Go to Phase 1.
-- **Mode B: PPT Conversion** — Convert a .pptx file. Go to Phase 4.
-- **Mode C: Enhancement** — Improve an existing HTML presentation. Read it, understand it, enhance. **Follow Mode C modification rules below.**
+- **Mode P — 中宏PPTX** *(DEFAULT)*: User wants a native .pptx file (keywords: PPT, PPTX, 幻灯片, slides, deck, 演讲稿). **→ Go to Phase 1P** (see Mode P section below).
+- **Mode H — HTML Presentation**: User explicitly wants a browser/web/animated HTML deck (keywords: HTML, web, browser, 动画, 网页). → Go to Phase 1H.
+- **Mode C — PPT Conversion**: Convert an existing .pptx file to HTML. → Go to Phase 4.
+- **Mode E — Enhancement**: Improve existing HTML slides. → Follow Mode E rules in Phase 1H.
 
-### Mode C: Modification Rules
+**Routing rule for 中宏保险 / Manulife-Sinochem:** Default to **Mode P** (native PPTX) unless the user explicitly says HTML, web, or browser.
+
+### Mode E: Modification Rules
 
 When enhancing existing presentations, viewport fitting is the biggest risk:
 
@@ -83,9 +90,9 @@ When enhancing existing presentations, viewport fitting is the biggest risk:
 
 **When adding images to existing slides:** Move image to new slide or reduce other content first. Never add images without checking if existing content already fills the viewport.
 
-### Brand Keyword Auto-Routing
+### Brand Keyword Auto-Routing (Mode H only)
 
-**Default preset rule**: This skill is exclusively for Manulife-Sinochem (中宏保险) internal use. Always use the **Sinochem Signature** preset regardless of whether the user mentions brand keywords. Skip Phase 2 (Style Discovery) entirely.
+**HTML preset rule**: For Mode H (HTML presentation), always use the **Sinochem Signature** preset. Skip Phase 2 (Style Discovery) entirely. For native PPTX output, use Mode P — the preset concept does not apply.
 
 Make sure `assets/logo.png` exists in the output directory — the preset requires it for the watermark.
 
@@ -100,6 +107,125 @@ These three rules are HARD requirements for the Sinochem Signature preset and su
    **Overflow audit (do this before every generation/edit):** When the browser window is wider than 16:9, `1vw > 1cqw`, so `vw`-sized elements overflow the deck and get clipped. Scan every `clamp()`, `min()`, `max()`, and bare length value — replace `vw`/`vh` with `cqw`/`cqh`. Exceptions: only `.deck-shell` itself correctly uses `vw`/`vh` to size against the browser viewport. `.deck` uses `100%` (of shell). Anything inside `.slide` must use `cqw`/`cqh`.
 
 Copy the full canvas CSS block from [STYLE_PRESETS.md](STYLE_PRESETS.md) § Sinochem Signature verbatim. When adding or editing content inside slides, replace any remaining `vw`/`vh` with `cqw`/`cqh`. Never reintroduce `100vw/100vh` on `.slide`, never vertically center the title, and never remove the `.deck-shell` / `.deck` wrapper — any of these will break PPTX export fidelity.
+
+---
+
+## ════════════════════ MODE P — 中宏PPTX ════════════════════
+
+Generate a native PowerPoint file directly from a JSON spec using `generate-pptx.js` + the company template. **This is the default flow for all 中宏保险 PPT requests.**
+
+---
+
+### Phase 1P: Content Discovery
+
+**Ask ALL questions in a single AskUserQuestion call:**
+
+**Question 1 — 主题 / Topic** (header: `"Topic"`):
+What is this presentation about? (1–2 sentences)
+
+**Question 2 — 受众 / Audience** (header: `"Audience"`):
+Options: 内部团队 Internal team / 管理层 Management / 客户合作伙伴 Client or Partner / 公开演讲 Conference
+
+**Question 3 — 关键信息 / Key Messages** (header: `"Key Messages"`):
+What are the 3–5 core messages, findings, or takeaways? Share rough notes — the spec will be structured for you.
+
+**Question 4 — 数据 / Data** (header: `"Data"`):
+Do you have specific numbers or statistics to show?
+Options: 有数据，下面分享 Yes — sharing below / 没有，AI生成示例数据 No — use illustrative data / 纯文字幻灯片 Text-only slides
+
+**Question 5 — 幻灯片数量 / Slide Count** (header: `"Slides"`):
+Approximate content slides (not counting cover + closing)?
+Options: 4–6 slides / 7–10 slides / 11–15 slides
+
+---
+
+### Phase 2P: Design JSON Spec
+
+Map the user's content to the available slide types, then write a complete `spec.json`.
+
+#### Slide Type Selection Guide
+
+| Content you have | Best slide type |
+|---|---|
+| 3–4 key statistics / numeric KPIs | `stat-grid` |
+| 3–5 findings / insights with descriptions | `findings` |
+| 3 large callout numbers (%, ratios, scores) | `callout-grid` |
+| Two contrasting lists (problems vs solutions, left vs right) | `two-col-list` |
+| 3 products / methods / paths with an effectiveness % | `learn-grid` |
+| 4 action items / recommendations / roadmap steps | `rec-grid` |
+| Time-series or categorical comparison data | `chart` |
+| 5–6 bullet points on a single topic | `content` |
+| Section separator between major topics | `divider` |
+
+**Always start with `title` and end with `closing`. Add `divider` between major sections if the deck has 8+ slides.**
+
+#### Supported `icon` Values
+
+`brain` 脑 · `cpu` 芯 · `shield-check` ✓ · `bar-chart-2` 析 · `shield` 盾 · `zap` 速 · `users` 员 · `monitor` 屏 · `briefcase` 业 · `globe` 全 · `calendar` 期 · `arrow-right` ▶
+
+#### Spec JSON Schema
+
+```json
+{
+  "title": "演讲标题",
+  "author": "中宏保险 · 部门名称",
+  "subject": "主题分类",
+  "date": "2026年5月",
+  "slides": [
+    { "type": "title",        "title": "...", "subtitle": "...", "date": "..." },
+    { "type": "stat-grid",    "heading": "...", "subtitle": "...",
+      "stats": [{ "value": "...", "label": "...", "source": "..." }] },
+    { "type": "findings",     "heading": "...", "subtitle": "...",
+      "findings": [{ "icon": "brain", "title": "...", "desc": "..." }] },
+    { "type": "callout-grid", "heading": "...",
+      "cards": [{ "theme": "green|neutral|navy", "value": "...", "title": "...", "desc": "..." }] },
+    { "type": "two-col-list", "heading": "...",
+      "left":  { "icon": "shield", "title": "...", "bullets": ["..."] },
+      "right": { "icon": "zap",    "title": "...", "bullets": ["..."] } },
+    { "type": "learn-grid",   "heading": "...",
+      "cards": [{ "icon": "users", "theme": "green|navy|neutral", "title": "...", "desc": "...", "label": "...", "pct": 75 }] },
+    { "type": "rec-grid",     "heading": "...",
+      "recs": [{ "num": "01", "title": "...", "desc": "..." }] },
+    { "type": "chart",        "heading": "...", "chartType": "BAR|LINE|PIE",
+      "data": [{ "name": "...", "labels": ["..."], "values": [0] }] },
+    { "type": "content",      "heading": "...", "bullets": ["..."] },
+    { "type": "divider",      "label": "Section Title", "number": "01" },
+    { "type": "closing",      "title": "...", "subtitle": "..." }
+  ]
+}
+```
+
+---
+
+### Phase 3P: Generate & Deliver
+
+1. **Write spec** to `test/<topic-slug>-spec.json`
+   *(topic-slug = lowercase alphanumeric + hyphens; keep all Chinese content inside JSON values)*
+
+2. **Run the pipeline:**
+   ```bash
+   bash scripts/build-with-template.sh test/<topic-slug>-spec.json test/<topic-slug>-final.pptx
+   ```
+
+3. **Open the file:**
+   ```bash
+   open test/<topic-slug>-final.pptx
+   ```
+
+4. **Report to the user:** file path · slide count · types used · offer PDF if wanted:
+   ```bash
+   bash scripts/export-pdf.sh test/<topic-slug>-final.pptx   # optional
+   ```
+
+> **Troubleshooting:** `node --version` (needs Node.js); `npm list -g pptxgenjs` → install with `npm install -g pptxgenjs`; `python3 -m pip install "python-pptx>=1.0" lxml` (for template merge).
+
+---
+
+---
+
+## ════════════════════ MODE H — HTML Presentation ════════════════════
+
+*Use this mode only when the user explicitly requests a browser-based, animated, or web-hosted presentation. All HTML design constraints (Core Principles, Design Aesthetics, Viewport Fitting, Sinochem Signature Invariants) documented above still apply.*
 
 ---
 
@@ -301,7 +427,9 @@ This deploys the presentation to Vercel — a free hosting platform. The link wo
 
 ### 6B: Export to PPTX (Editable)
 
-Generate a fully editable native PPTX directly from a JSON spec using PptxGenJS — no browser or Chromium required. All shapes, text, Lucide icons, and charts are created as native PowerPoint objects.
+> **Note:** If the user originally requested a PPTX output, use **Mode P** (Phase 1P–3P) — that is the primary PPTX generation flow. Phase 6B is only needed when converting an HTML presentation to PPTX **after the fact** (e.g. the user started in Mode H but now also wants a .pptx).
+
+Generate a fully editable native PPTX directly from a JSON spec using PptxGenJS — no browser or Chromium required. All shapes, text, icons, and charts are created as native PowerPoint objects.
 
 **With company template (中宏PPT模版 — recommended):**
 
@@ -391,7 +519,7 @@ This captures each slide as a screenshot and combines them into a PDF. Perfect f
 | [animation-patterns.md](animation-patterns.md)     | CSS/JS animation snippets and effect-to-feeling guide                | Phase 3 (generation)      |
 | [scripts/extract-pptx.py](scripts/extract-pptx.py)         | Inspect / extract content from an existing .pptx file                | Phase 4 (conversion)      |
 | [scripts/deploy.sh](scripts/deploy.sh)                     | Deploy slides to Vercel for instant sharing                          | Phase 6 (sharing)         |
-| [scripts/generate-pptx.js](scripts/generate-pptx.js)       | Generate native PPTX from a JSON spec (PptxGenJS)                   | Phase 6B (PPTX export)    |
-| [scripts/apply-template.py](scripts/apply-template.py)     | Merge generated slides into the company PPTX template               | Phase 6B (PPTX export)    |
-| [scripts/build-with-template.sh](scripts/build-with-template.sh) | One-command pipeline: spec → PPTX with company template       | Phase 6B (PPTX export)    |
+| [scripts/generate-pptx.js](scripts/generate-pptx.js)       | Generate native PPTX from a JSON spec (PptxGenJS)                   | **Phase 3P** (primary PPTX generation) |
+| [scripts/apply-template.py](scripts/apply-template.py)     | Merge generated slides into the company PPTX template               | **Phase 3P** (primary PPTX generation) |
+| [scripts/build-with-template.sh](scripts/build-with-template.sh) | One-command pipeline: spec → PPTX with company template       | **Phase 3P** (primary PPTX generation) |
 | [scripts/export-pdf.sh](scripts/export-pdf.sh)             | Export slides to PDF                                                 | Phase 6C (PDF export)     |
