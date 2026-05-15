@@ -309,7 +309,7 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
 **Canvas & Title Rules (NON-NEGOTIABLE for this preset, override viewport-base.css):**
 - Slide canvas is **locked to 16:9** via a `.deck` container. The deck uses `width: min(100vw, calc(100vh * 16 / 9))` + `height: min(100vh, calc(100vw * 9 / 16))`. The letterbox area (outside the 16:9 deck) uses a **white** `body` background (`#ffffff`).
 - Every `.slide` uses `width: 100%; height: 100%; aspect-ratio: 16/9;` relative to `.deck` — never `100vw/100vh`.
-- The deck declares `container-type: size; container-name: deck;` so inner sizes use **`cqw` / `cqh`** (container query units) instead of `vw` / `vh`. This guarantees preview fidelity regardless of browser aspect ratio AND guarantees PPTX export fidelity (Playwright opens at 1920×1080 → deck fills viewport → `cqw`/`cqh` == `vw`/`vh` → pixel-perfect `_px2emu` mapping in `scripts/export-pptx.py`).
+- The deck declares `container-type: size; container-name: deck;` so inner sizes use **`cqw` / `cqh`** (container query units) instead of `vw` / `vh`. This guarantees consistent preview fidelity regardless of browser aspect ratio.
 - **Title is ALWAYS at the top** of every slide: put eyebrow / `<h1>` / accent-rule / subtitle inside `.slide-header` (grid row 1, `flex-direction: column; align-items: flex-start;` — no vertical centering). `.slide-body` uses `justify-content: flex-start;` so content flows top-down.
 
 **Typography:**
@@ -402,8 +402,7 @@ Curated visual styles for Frontend Slides. Each preset is inspired by real desig
 
 **Required Canvas CSS (copy verbatim — overrides viewport-base.css for this preset):**
 ```css
-/* 16:9 letterbox canvas. Slides do NOT auto-fit browser; they stay 16:9
-   so HTML→PPTX export (export-pptx.py runs at 1920×1080) never distorts. */
+/* 16:9 letterbox canvas. Slides do NOT auto-fit browser; they stay 16:9. */
 html, body {
   height: 100%; margin: 0; overflow: hidden;
   background: #ffffff;                /* letterbox bars — white */
@@ -485,6 +484,17 @@ img, .image-container {
   gap: clamp(5px, 0.9cqh, 9px);
   z-index: 999;
   pointer-events: auto;
+}
+
+/* Typography — uses cqw so sizes are canvas-relative (1cqw = 19.2px at 1920px export canvas)
+   Targets: title 36–44pt | section header 20–24pt | body 14–16pt | caption 10–12pt
+   (1pt ≈ 1.333px at 96 dpi; 40pt ≈ 53px ≈ 2.75cqw at 1920px) */
+:root {
+  --title-size: clamp(2.5rem, 2.75cqw, 3.5rem);   /* Slide title:      36–44pt bold  (~40pt at 1920px) */
+  --h2-size:    clamp(1.5rem, 1.5cqw,  2rem);      /* Section header:   20–24pt bold  (~22pt at 1920px) */
+  --h3-size:    clamp(1.1rem, 1.25cqw, 1.5rem);    /* Sub-section heading: 16–20pt   (~19pt at 1920px) */
+  --body-size:  clamp(0.875rem, 1.1cqw, 1.25rem);  /* Body text:        14–16pt       (~16pt at 1920px) */
+  --small-size: clamp(0.75rem, 0.85cqw, 1rem);     /* Captions / muted: 10–12pt       (~12pt at 1920px) */
 }
 ```
 

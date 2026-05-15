@@ -33,11 +33,14 @@ Reference architecture for generating slide presentations. Every presentation fo
         --accent-glow: rgba(0, 255, 204, 0.3);
 
         /* Typography — MUST use clamp() */
+        /* Target pt sizes: title 36–44pt bold | header 20–24pt bold | body 14–16pt | caption 10–12pt muted */
         --font-display: "Clash Display", sans-serif;
         --font-body: "Satoshi", sans-serif;
-        --title-size: clamp(2rem, 6vw, 5rem);
-        --subtitle-size: clamp(0.875rem, 2vw, 1.25rem);
-        --body-size: clamp(0.75rem, 1.2vw, 1rem);
+        --title-size: clamp(2.5rem, 4vw, 3.5rem);      /* Slide title: 36–44pt bold */
+        --h2-size: clamp(1.5rem, 2.25vw, 2rem);         /* Section header: 20–24pt bold */
+        --subtitle-size: clamp(1.5rem, 2.25vw, 2rem);   /* Section header: 20–24pt bold */
+        --body-size: clamp(0.875rem, 1.5vw, 1.25rem);   /* Body text: 14–16pt */
+        --small-size: clamp(0.75rem, 1.1vw, 1rem);      /* Captions: 10–12pt muted */
 
         /* Spacing — MUST use clamp() */
         --slide-padding: clamp(1.5rem, 4vw, 4rem);

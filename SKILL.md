@@ -91,11 +91,11 @@ Make sure `assets/logo.png` exists in the output directory — the preset requir
 
 ### Sinochem Signature — Canvas & Title Invariants (override viewport-base.css)
 
-These three rules are HARD requirements for the Sinochem Signature preset and supersede the generic viewport-base.css rules whenever they conflict. Together they guarantee that HTML → PPTX export via `scripts/export-pptx.py` is pixel-faithful.
+These three rules are HARD requirements for the Sinochem Signature preset and supersede the generic viewport-base.css rules whenever they conflict. Together they guarantee consistent layout fidelity across browsers and export targets.
 
 1. **16:9 canvas lock (no full browser auto-fit).** Use a two-layer wrapper: an outer `<div class="deck-shell">` that owns the 16:9 size and `container-type: size; container-name: deck;`, and an inner `<div class="deck">` that is the scrollable slide canvas (`width: 100%; height: 100%;`). `deck-shell` CSS: `position: relative; width: min(100vw, calc(100vh * 16 / 9)); height: min(100vh, calc(100vw * 9 / 16));`. `html/body` background is `#ffffff` (white letterbox). Each slide is `width: 100%; height: 100%; aspect-ratio: 16/9;` relative to `.deck` — never `100vw/100vh`. **Nav-dots and any overlays must be placed as siblings of `.deck` inside `.deck-shell`, using `position: absolute` — NEVER `position: fixed` on the body. `position: fixed` is viewport-relative and causes nav-dots to float into the white letterbox area when the browser is wider than 16:9.**
 2. **Title always on top.** Inside every slide use `grid-template-rows: auto 1fr auto` where row 1 (`.slide-header`) holds eyebrow + `<h1>` + accent-rule + subtitle with `flex-direction: column; align-items: flex-start;`. The body row uses `justify-content: flex-start` — never `center` — so content flows top-down and the title never drifts from the top edge.
-3. **Use `cqw`/`cqh` instead of `vw`/`vh` inside slides.** The `.deck-shell` declares `container-type: size; container-name: deck;`, making `cqw`/`cqh` relative to the 16:9 canvas rather than the browser. This is what makes the preview match the PPTX export exactly: `scripts/export-pptx.py` runs Chromium at 1920×1080, the deck fills the viewport, and `_px2emu` maps each element without any aspect-ratio drift.
+3. **Use `cqw`/`cqh` instead of `vw`/`vh` inside slides.** The `.deck-shell` declares `container-type: size; container-name: deck;`, making `cqw`/`cqh` relative to the 16:9 canvas rather than the browser. This is what makes the preview consistent across browser window sizes and ensures correct proportions when exporting to PDF.
 
    **Overflow audit (do this before every generation/edit):** When the browser window is wider than 16:9, `1vw > 1cqw`, so `vw`-sized elements overflow the deck and get clipped. Scan every `clamp()`, `min()`, `max()`, and bare length value — replace `vw`/`vh` with `cqw`/`cqh`. Exceptions: only `.deck-shell` itself correctly uses `vw`/`vh` to size against the browser viewport. `.deck` uses `100%` (of shell). Anything inside `.slide` must use `cqw`/`cqh`.
 
@@ -212,6 +212,17 @@ If images were provided, the slide outline already incorporates them from Step 1
 - Every section needs a clear `/* === SECTION NAME === */` comment block
 - **Icons: ALWAYS use Lucide vector icons — NEVER use emoji as decorative icons.** Load Lucide from CDN in `<head>`: `<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>`. Render icons as `<i data-lucide="icon-name"></i>` and call `lucide.createIcons()` at the end of the `<script>` block. Emoji are only acceptable inside literal code samples / code blocks shown as code output (e.g. `<pre>` / `<code>` content). See [html-template.md](html-template.md) § Icons for sizing patterns.
 
+**Typography Standards (NON-NEGOTIABLE — enforce in every generated slide):**
+
+| Element | Size target | CSS variable | Weight |
+|---|---|---|---|
+| Slide title (`h1`) | 36–44 pt | `--title-size` | 700 bold |
+| Section header (`h2`) | 20–24 pt | `--h2-size` | 700 bold |
+| Body text (`p`, `li`) | 14–16 pt | `--body-size` | 400/500 |
+| Captions / muted | 10–12 pt | `--small-size` | 400, secondary color |
+
+Use the `clamp()` values defined in `viewport-base.css` (vw-based) or the Sinochem Signature canvas CSS (cqw-based) — see [STYLE_PRESETS.md](STYLE_PRESETS.md). Never assign font sizes smaller than the minimums in those variables. Apply `font-weight: 700` to all `h1` and `h2` elements explicitly.
+
 ---
 
 ## Phase 4: PPT Conversion
@@ -290,34 +301,40 @@ This deploys the presentation to Vercel — a free hosting platform. The link wo
 
 ### 6B: Export to PPTX (Editable)
 
-This converts every slide into a fully editable PowerPoint deck. Every text block becomes a textbox you can edit, every image (including base64 LOGO) becomes an embedded picture shape, and backgrounds become native PPTX shapes — nothing is a screenshot.
+Generate a fully editable native PPTX directly from a JSON spec using PptxGenJS — no browser or Chromium required. All shapes, text, Lucide icons, and charts are created as native PowerPoint objects.
 
-**Run the export script:**
+**With company template (中宏PPT模版 — recommended):**
 
 ```bash
-bash scripts/export-pptx.sh <path-to-html> [output.pptx]
+bash scripts/build-with-template.sh <spec.json> [output.pptx]
 ```
 
-Optional flags:
+This two-step pipeline: (1) `generate-pptx.js` builds all content slides from the spec; (2) `apply-template.py` merges them into the branded company PPTX template (cover + closing slides).
 
-- `--compact` — Render at 1280×720 (faster, slightly smaller)
+**Without template:**
 
-**What it produces:**
-- All text: editable in PowerPoint (font name, size, color, alignment preserved)
-- `<img>` / base64 LOGO: embedded as real picture shapes (replaceable, resizable)
-- `<svg>` icons: rasterized to PNG via headless browser screenshot, then embedded as picture shapes
-- Div backgrounds: native PPTX rectangle / rounded-rect / gradient fill shapes
-- `linear-gradient(...)` backgrounds: native PPTX gradient fill
-- `border-radius`: PPTX rounded-rectangle with matched corner adjustment
-- `transform: rotate()`: shape.rotation preserved
+```bash
+node scripts/generate-pptx.js --input <spec.json> [output.pptx]
+```
 
-**Limitations (gracefully skipped):**
-- CSS animations → only the final visual state is captured
-- `clip-path` / `mask` / `backdrop-filter` → ignored (no PPTX equivalent)
-- `::before` / `::after` pseudo-elements → not yet captured
-- Web fonts: font *name* is preserved; if PowerPoint doesn't have the font installed, it falls back gracefully
+**Spec format (`spec.json`) — supported slide types:**
 
-**⚠ First run is slow.** The script installs `python-pptx>=1.0`, `playwright`, `lxml`, `pillow` and downloads Chromium (~150 MB) on first use. Subsequent runs are fast.
+| `type` | Key fields |
+|--------|------------|
+| `title` | `title`, `subtitle`, `date` |
+| `stat-grid` | `heading`, `stats[]` (`value`, `label`, `source`) |
+| `findings` | `heading`, `subtitle`, `findings[]` (`icon`, `title`, `desc`) |
+| `callout-grid` | `heading`, `cards[]` (`theme`, `value`, `title`, `desc`) |
+| `two-col-list` | `heading`, `left`/`right` (`icon`, `title`, `bullets[]`) |
+| `learn-grid` | `heading`, `cards[]` (`icon`, `theme`, `title`, `desc`, `label`, `pct`) |
+| `rec-grid` | `heading`, `recs[]` (`num`, `title`, `desc`) |
+| `chart` | `heading`, `chartType` (BAR/LINE/PIE), `data[]` |
+| `divider` | `label`, `number` |
+| `closing` | `title`, `subtitle` |
+
+**Supported `icon` values** (Lucide): `brain`, `cpu`, `shield-check`, `bar-chart-2`, `shield`, `zap`, `users`, `monitor`, `briefcase`, `globe`, `calendar`, `arrow-right`.
+
+**Requires:** Node.js + `npm install -g pptxgenjs`; `python3 -m pip install "python-pptx>=1.0" lxml` (template merge only).
 
 ---
 
@@ -372,7 +389,9 @@ This captures each slide as a screenshot and combines them into a PDF. Perfect f
 | [viewport-base.css](viewport-base.css)             | Mandatory responsive CSS — copy into every presentation              | Phase 3 (generation)      |
 | [html-template.md](html-template.md)               | HTML structure, JS features, code quality standards                  | Phase 3 (generation)      |
 | [animation-patterns.md](animation-patterns.md)     | CSS/JS animation snippets and effect-to-feeling guide                | Phase 3 (generation)      |
-| [scripts/extract-pptx.py](scripts/extract-pptx.py) | Python script for PPT content extraction                             | Phase 4 (conversion)      |
-| [scripts/deploy.sh](scripts/deploy.sh)             | Deploy slides to Vercel for instant sharing                          | Phase 6 (sharing)         |
-| [scripts/export-pptx.sh](scripts/export-pptx.sh)   | Export slides to editable PPTX (DOM → native shapes, no screenshots) | Phase 6B (PPTX export)    |
-| [scripts/export-pdf.sh](scripts/export-pdf.sh)     | Export slides to PDF                                                 | Phase 6C (PDF export)     |
+| [scripts/extract-pptx.py](scripts/extract-pptx.py)         | Inspect / extract content from an existing .pptx file                | Phase 4 (conversion)      |
+| [scripts/deploy.sh](scripts/deploy.sh)                     | Deploy slides to Vercel for instant sharing                          | Phase 6 (sharing)         |
+| [scripts/generate-pptx.js](scripts/generate-pptx.js)       | Generate native PPTX from a JSON spec (PptxGenJS)                   | Phase 6B (PPTX export)    |
+| [scripts/apply-template.py](scripts/apply-template.py)     | Merge generated slides into the company PPTX template               | Phase 6B (PPTX export)    |
+| [scripts/build-with-template.sh](scripts/build-with-template.sh) | One-command pipeline: spec → PPTX with company template       | Phase 6B (PPTX export)    |
+| [scripts/export-pdf.sh](scripts/export-pdf.sh)             | Export slides to PDF                                                 | Phase 6C (PDF export)     |

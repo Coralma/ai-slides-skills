@@ -39,15 +39,17 @@ html {
 }
 
 /* 4. ALL typography uses clamp() for responsive scaling */
+/* Target pt sizes (1pt ≈ 1.333px at 96 dpi):
+   Slide title: 36–44pt bold | Section header: 20–24pt bold | Body: 14–16pt | Caption: 10–12pt muted */
 :root {
     /* Titles scale from mobile to desktop */
-    --title-size: clamp(1.5rem, 5vw, 4rem);
-    --h2-size: clamp(1.25rem, 3.5vw, 2.5rem);
-    --h3-size: clamp(1rem, 2.5vw, 1.75rem);
+    --title-size: clamp(2.5rem, 4vw, 3.5rem);      /* Slide title: 36–44pt bold */
+    --h2-size: clamp(1.5rem, 2.25vw, 2rem);         /* Section header: 20–24pt bold */
+    --h3-size: clamp(1.1rem, 2vw, 1.5rem);          /* Sub-section heading: 16–20pt */
 
     /* Body text */
-    --body-size: clamp(0.75rem, 1.5vw, 1.125rem);
-    --small-size: clamp(0.65rem, 1vw, 0.875rem);
+    --body-size: clamp(0.875rem, 1.5vw, 1.25rem);   /* Body text: 14–16pt */
+    --small-size: clamp(0.75rem, 1.1vw, 1rem);      /* Captions: 10–12pt muted */
 
     /* Spacing scales with viewport */
     --slide-padding: clamp(1rem, 4vw, 4rem);
@@ -95,8 +97,8 @@ img, .image-container {
     :root {
         --slide-padding: clamp(0.75rem, 3vw, 2rem);
         --content-gap: clamp(0.4rem, 1.5vw, 1rem);
-        --title-size: clamp(1.25rem, 4.5vw, 2.5rem);
-        --h2-size: clamp(1rem, 3vw, 1.75rem);
+        --title-size: clamp(2rem, 4vw, 3rem);
+        --h2-size: clamp(1.25rem, 2.5vw, 1.75rem);
     }
 }
 
@@ -105,8 +107,8 @@ img, .image-container {
     :root {
         --slide-padding: clamp(0.5rem, 2.5vw, 1.5rem);
         --content-gap: clamp(0.3rem, 1vw, 0.75rem);
-        --title-size: clamp(1.1rem, 4vw, 2rem);
-        --body-size: clamp(0.7rem, 1.2vw, 0.95rem);
+        --title-size: clamp(1.75rem, 3.5vw, 2.5rem);
+        --body-size: clamp(0.8rem, 1.2vw, 1rem);
     }
 
     /* Hide non-essential elements */
@@ -119,16 +121,16 @@ img, .image-container {
 @media (max-height: 500px) {
     :root {
         --slide-padding: clamp(0.4rem, 2vw, 1rem);
-        --title-size: clamp(1rem, 3.5vw, 1.5rem);
-        --h2-size: clamp(0.9rem, 2.5vw, 1.25rem);
-        --body-size: clamp(0.65rem, 1vw, 0.85rem);
+        --title-size: clamp(1.5rem, 3.5vw, 2rem);
+        --h2-size: clamp(1rem, 2.5vw, 1.5rem);
+        --body-size: clamp(0.75rem, 1vw, 0.9rem);
     }
 }
 
 /* Narrow viewports (< 600px width) */
 @media (max-width: 600px) {
     :root {
-        --title-size: clamp(1.25rem, 7vw, 2.5rem);
+        --title-size: clamp(1.75rem, 7vw, 2.75rem);
     }
 
     /* Stack grids vertically */
