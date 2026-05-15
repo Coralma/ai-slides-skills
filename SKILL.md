@@ -148,6 +148,7 @@ Map the user's content to the available slide types, then write a complete `spec
 | Content you have | Best slide type |
 |---|---|
 | 3–4 key statistics / numeric KPIs | `stat-grid` |
+| Two large side-by-side KPI numbers | `two-col` |
 | 3–5 findings / insights with descriptions | `findings` |
 | 3 large callout numbers (%, ratios, scores) | `callout-grid` |
 | Two contrasting lists (problems vs solutions, left vs right) | `two-col-list` |
@@ -157,11 +158,32 @@ Map the user's content to the available slide types, then write a complete `spec
 | 5–6 bullet points on a single topic | `content` |
 | Section separator between major topics | `divider` |
 
-**Always start with `title` and end with `closing`. Add `divider` between major sections if the deck has 8+ slides.**
+**Always start with `title` and end with `closing`. Add `divider` between major sections if the deck has 8+ slides.** In the final templated PPTX, `divider` slides are replaced by slide 2 (`Chapter`) from `中宏PPT模版.pptx`; set `label` to the chapter title.
 
-#### Supported `icon` Values
+#### 中宏PPT模版 Page Library
 
-`brain` 脑 · `cpu` 芯 · `shield-check` ✓ · `bar-chart-2` 析 · `shield` 盾 · `zap` 速 · `users` 员 · `monitor` 屏 · `briefcase` 业 · `globe` 全 · `calendar` 期 · `arrow-right` ▶
+Use these template pages as the layout vocabulary when designing the JSON spec. Keep content density close to the matching page; split overloaded content instead of forcing it into one slide.
+
+| Template page | Template intent | Use for | Current spec mapping |
+|---|---|---|---|
+| 1 `Title slide with subtitle` | Cover page | Deck title, author/subtitle, date | `title` (filled by `apply-template.py`) |
+| 2 `Chapter` | Chapter / section title | Major section divider | `divider` (final PPTX uses template page 2) |
+| 3 two-point split | Two parallel ideas | Problem vs solution, before vs after, two options | `two-col-list` or `two-col` |
+| 4 two stacked sections | Two detailed arguments | Two findings with longer explanation | `findings` with 2 items or `content` with 2 sections |
+| 5 image + three points | Visual plus three supporting points | Product/service/context image with 3 takeaways | `learn-grid`/`findings` with 3 items; use image assets only when provided |
+| 6 three numbered rows | Three ordered points | Three principles, layers, or phases | `findings` with 3 items |
+| 7 central visual + three callouts | Core concept with three implications | Capability model, operating model, strategic pillars | `callout-grid` or `learn-grid` with 3 cards |
+| 8 four quadrant cards | Four balanced modules | Four recommendations, dimensions, risks, or workstreams | `rec-grid` with 4 items |
+| 9 five-step process | Five sequential steps | Process, funnel, implementation flow | `content` with 5 numbered bullets; split if each step needs detail |
+| 10 six-step path | Six-stage journey | Roadmap stages, lifecycle, maturity path | `content` with 6 short bullets or split across two `findings` slides |
+| 11 horizontal timeline | Dated roadmap | Year/quarter milestones | `chart` for numeric trend, otherwise `content` with dated milestones |
+| 12 `Closing slide` | Closing page | Thanks / closing message | `closing` (final PPTX keeps template closing) |
+
+**Template matching rule:** prefer `two-col-list`, `findings`, `learn-grid`, `rec-grid`, `content`, and `chart` in the proportions above. Avoid layouts that do not exist in the company template unless the user's content truly requires them.
+
+#### Supported `icon` Values ([Tabler Icons](https://tabler.io/icons), MIT)
+
+`brain` · `cpu` · `shield-check` · `bar-chart-2` · `shield` · `zap` · `users` · `monitor` · `briefcase` · `globe` · `calendar` · `arrow-right`
 
 #### Spec JSON Schema
 
@@ -175,6 +197,9 @@ Map the user's content to the available slide types, then write a complete `spec
     { "type": "title",        "title": "...", "subtitle": "...", "date": "..." },
     { "type": "stat-grid",    "heading": "...", "subtitle": "...",
       "stats": [{ "value": "...", "label": "...", "source": "..." }] },
+    { "type": "two-col",      "heading": "...",
+      "left":  { "label": "...", "value": "...", "caption": "..." },
+      "right": { "label": "...", "value": "...", "caption": "..." } },
     { "type": "findings",     "heading": "...", "subtitle": "...",
       "findings": [{ "icon": "brain", "title": "...", "desc": "..." }] },
     { "type": "callout-grid", "heading": "...",
@@ -437,7 +462,7 @@ Generate a fully editable native PPTX directly from a JSON spec using PptxGenJS 
 bash scripts/build-with-template.sh <spec.json> [output.pptx]
 ```
 
-This two-step pipeline: (1) `generate-pptx.js` builds all content slides from the spec; (2) `apply-template.py` merges them into the branded company PPTX template (cover + closing slides).
+This two-step pipeline: (1) `generate-pptx.js` builds all content slides from the spec; (2) `apply-template.py` merges them into the branded company PPTX template, using the template cover, template chapter page for `divider`, and template closing slide.
 
 **Without template:**
 
@@ -451,6 +476,7 @@ node scripts/generate-pptx.js --input <spec.json> [output.pptx]
 |--------|------------|
 | `title` | `title`, `subtitle`, `date` |
 | `stat-grid` | `heading`, `stats[]` (`value`, `label`, `source`) |
+| `two-col` | `heading`, `left`/`right` (`label`, `value`, `caption`) |
 | `findings` | `heading`, `subtitle`, `findings[]` (`icon`, `title`, `desc`) |
 | `callout-grid` | `heading`, `cards[]` (`theme`, `value`, `title`, `desc`) |
 | `two-col-list` | `heading`, `left`/`right` (`icon`, `title`, `bullets[]`) |
@@ -460,7 +486,9 @@ node scripts/generate-pptx.js --input <spec.json> [output.pptx]
 | `divider` | `label`, `number` |
 | `closing` | `title`, `subtitle` |
 
-**Supported `icon` values** (Lucide): `brain`, `cpu`, `shield-check`, `bar-chart-2`, `shield`, `zap`, `users`, `monitor`, `briefcase`, `globe`, `calendar`, `arrow-right`.
+**Template page mapping:** `title` → template page 1; `divider` → template page 2 (`Chapter`); `closing` → template page 12. Other content types should follow the template page 3–11 archetypes listed in Phase 2P.
+
+**Supported `icon` values** ([Tabler Icons](https://tabler.io/icons), flat outline PNG): `brain`, `cpu`, `shield-check`, `bar-chart-2`, `shield`, `zap`, `users`, `monitor`, `briefcase`, `globe`, `calendar`, `arrow-right`.
 
 **Requires:** Node.js + `npm install -g pptxgenjs`; `python3 -m pip install "python-pptx>=1.0" lxml` (template merge only).
 

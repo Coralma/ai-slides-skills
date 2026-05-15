@@ -41,6 +41,14 @@ try {
   PptxGenJS = require("/opt/homebrew/lib/node_modules/pptxgenjs");
 }
 
+// ── Resolve sharp from global install (for SVG → PNG icon rendering) ────────
+let sharp;
+try {
+  sharp = require("sharp");
+} catch {
+  try { sharp = require("/opt/homebrew/lib/node_modules/sharp"); } catch { sharp = null; }
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // Brand Tokens — Sinochem Signature
 // ════════════════════════════════════════════════════════════════════════════
@@ -94,32 +102,82 @@ const makeShadowStrong = () => ({
 });
 
 // ════════════════════════════════════════════════════════════════════════════
-// Icon label map — text-based icons rendered as native PPTX text.
-// Using Chinese ideographs + universal symbols for reliable cross-platform
-// rendering without any external image dependency.
+// Icon System — Tabler Icons (MIT license, flat outline style)
+// https://tabler.io/icons
+// SVGs are converted to PNG at runtime using sharp + librsvg.
 // ════════════════════════════════════════════════════════════════════════════
-const ICON_CHARS = {
-  "brain":        "脑",   // Brain / AI intelligence
-  "cpu":          "芯",   // CPU / Chip
-  "shield-check": "✓",   // Verified / Safe  (U+2713, in every font)
-  "bar-chart-2":  "析",   // Analytics / Data analysis
-  "shield":       "盾",   // Shield / Protection
-  "zap":          "速",   // Lightning / Speed
-  "users":        "员",   // Users / Team members
-  "monitor":      "屏",   // Monitor / Screen display
-  "briefcase":    "业",   // Briefcase / Business / Industry
-  "globe":        "全",   // Globe / Global / Universal
-  "calendar":     "期",   // Calendar / Schedule / Period
-  "arrow-right":  "▶",   // Arrow right  (U+25B6, universal)
+
+/** Map internal icon names → Tabler Icons filename (outline set) */
+const TABLER_MAP = {
+  "brain":        "brain",
+  "cpu":          "cpu",
+  "shield-check": "shield-check",
+  "bar-chart-2":  "chart-bar",
+  "shield":       "shield",
+  "zap":          "bolt",
+  "users":        "users",
+  "monitor":      "device-desktop",
+  "briefcase":    "briefcase",
+  "globe":        "world",
+  "calendar":     "calendar",
+  "arrow-right":  "arrow-right",
 };
 
+/** Resolve the Tabler Icons outline SVG directory */
+const TABLER_DIR = (() => {
+  const candidates = [
+    "/opt/homebrew/lib/node_modules/@tabler/icons/icons/outline",
+    path.join(__dirname, "../node_modules/@tabler/icons/icons/outline"),
+    path.join(__dirname, "node_modules/@tabler/icons/icons/outline"),
+  ];
+  for (const d of candidates) {
+    try { if (fs.existsSync(d)) return d; } catch { /* skip */ }
+  }
+  return null;
+})();
+
+/** In-memory cache: "<iconName>_<colorHex>" → "data:image/png;base64,..." */
+const _iconCache = {};
+
 /**
- * Return the display character for the given icon name, or null if unknown.
- * The character is rendered as styled text inside a colored background square
- * — fully native to PPTX with no image embedding required.
+ * Load a Tabler icon as a base64 PNG data URL (async, cached).
+ * @param {string} iconName  internal name, e.g. "brain"
+ * @param {string} colorHex  6-char hex without #, default "FFFFFF"
+ * @param {number} size      render size in pixels, default 64
+ * @returns {Promise<string|null>}
  */
-function getIconChar(name) {
-  return ICON_CHARS[name] || null;
+async function loadIcon(iconName, colorHex = "FFFFFF", size = 64) {
+  const key = `${iconName}_${colorHex}`;
+  if (_iconCache[key]) return _iconCache[key];
+  if (!sharp || !TABLER_DIR) return null;
+  const file = path.join(TABLER_DIR, `${TABLER_MAP[iconName] || iconName}.svg`);
+  if (!fs.existsSync(file)) { console.warn(`[icons] not found: ${file}`); return null; }
+  let svg = fs.readFileSync(file, "utf8");
+  svg = svg.replace(/currentColor/g, `#${colorHex}`);
+  const buf = await sharp(Buffer.from(svg)).resize(size, size).png().toBuffer();
+  _iconCache[key] = `data:image/png;base64,${buf.toString("base64")}`;
+  return _iconCache[key];
+}
+
+/**
+ * Pre-load all known icons in white so slide builders can read them
+ * synchronously via getIcon().
+ */
+async function preloadIcons() {
+  if (!sharp || !TABLER_DIR) {
+    console.warn("[icons] sharp or @tabler/icons not available — icons will be omitted");
+    return;
+  }
+  await Promise.all(Object.keys(TABLER_MAP).map(n => loadIcon(n, "FFFFFF", 64)));
+  console.log(`[icons] Loaded ${Object.keys(_iconCache).length} Tabler icons`);
+}
+
+/**
+ * Return cached PNG data URL synchronously (call preloadIcons() first).
+ * Always returns white version — place on a colored background shape.
+ */
+function getIcon(iconName) {
+  return _iconCache[`${iconName}_FFFFFF`] || null;
 }
 
 /**
@@ -492,10 +550,9 @@ function buildFindingsSlide(pres, spec, pageNum, total) {
   findings.forEach((f, i) => {
     const isEven      = i % 2 === 1;
     const borderColor = isEven ? T.brandNavy : T.brandGreen;
-    const iconBg      = isEven ? T.brandNavySoft : T.brandGreenSoft;
     const y           = startY + i * (ITEM_H + GAP);
     const iconName    = f.icon || null;
-    const iconChar    = iconName ? getIconChar(iconName) : null;
+    const iconData    = iconName ? getIcon(iconName) : null;
 
     // Card background
     slide.addShape("rect", {
@@ -507,21 +564,17 @@ function buildFindingsSlide(pres, spec, pageNum, total) {
       x: MX, y, w: 0.075, h: ITEM_H,
       fill: { color: borderColor }, line: { color: borderColor, width: 0 }
     });
-    if (iconChar) {
-      // Icon background square
+    if (iconData) {
+      // Icon background square (solid accent color)
       slide.addShape("rect", {
         x: MX + 0.13, y: y + 0.22, w: 0.50, h: 0.50,
-        fill: { color: iconBg }, line: { color: iconBg, width: 0 }
+        fill: { color: borderColor }, line: { color: borderColor, width: 0 }
       });
-      // Icon label — native text, renders in all PPTX viewers
-      slide.addText(iconChar, {
-        x: MX + 0.13, y: y + 0.22, w: 0.50, h: 0.50,
-        fontSize: 18, fontFace: FONT_BODY, bold: true,
-        color: borderColor, align: "center", valign: "middle", margin: 0
-      });
+      // Tabler icon PNG (white on colored bg)
+      slide.addImage({ data: iconData, x: MX + 0.20, y: y + 0.29, w: 0.36, h: 0.36 });
     }
-    const textX = iconChar ? MX + 0.75 : MX + 0.20;
-    const textW = iconChar ? CW - 0.95  : CW - 0.35;
+    const textX = iconData ? MX + 0.75 : MX + 0.20;
+    const textW = iconData ? CW - 0.95  : CW - 0.35;
     slide.addText(f.title || "", {
       x: textX, y: y + 0.11, w: textW, h: 0.36,
       fontSize: 16, fontFace: FONT_BODY, bold: true,
@@ -624,15 +677,17 @@ function buildTwoColListSlide(pres, spec, pageNum, total) {
       fill: { color: accent }, line: { color: accent, width: 0 }
     });
     // Icon beside column title
-    const iconChar = data.icon ? getIconChar(data.icon) : null;
-    const titleX   = iconChar ? x + 0.72 : x + 0.27;
-    const titleW   = iconChar ? COL_W - 0.99 : COL_W - 0.54;
-    if (iconChar) {
-      slide.addText(iconChar, {
-        x: x + 0.27, y: COL_Y + 0.19, w: 0.35, h: 0.50,
-        fontSize: 16, fontFace: FONT_BODY, bold: true,
-        color: accent, align: "center", valign: "middle", margin: 0
+    const iconData = data.icon ? getIcon(data.icon) : null;
+    const titleX   = iconData ? x + 0.77 : x + 0.27;
+    const titleW   = iconData ? COL_W - 1.04 : COL_W - 0.54;
+    if (iconData) {
+      // Small icon square with accent bg
+      slide.addShape("rect", {
+        x: x + 0.27, y: COL_Y + 0.20, w: 0.40, h: 0.40,
+        fill: { color: accent }, line: { color: accent, width: 0 }
       });
+      // Tabler icon PNG
+      slide.addImage({ data: iconData, x: x + 0.32, y: COL_Y + 0.25, w: 0.30, h: 0.30 });
     }
     slide.addText(data.title || "", {
       x: titleX, y: COL_Y + 0.19, w: titleW, h: 0.50,
@@ -681,9 +736,9 @@ function buildLearnGridSlide(pres, spec, pageNum, total) {
   const CARD_Y = CY, CARD_H = CH;
 
   const THEMES = {
-    green:   { iconBg: "E6F5ED", barColor: T.brandGreen,  valColor: T.brandGreen  },
-    navy:    { iconBg: "E8EDF6", barColor: T.brandNavy,   valColor: T.brandNavy   },
-    neutral: { iconBg: T.bgSecondary, barColor: T.textPrimary, valColor: T.textPrimary }
+    green:   { iconBg: T.brandGreen,  barColor: T.brandGreen,  valColor: T.brandGreen  },
+    navy:    { iconBg: T.brandNavy,   barColor: T.brandNavy,   valColor: T.brandNavy   },
+    neutral: { iconBg: T.textPrimary, barColor: T.textPrimary, valColor: T.textPrimary }
   };
 
   cards.forEach((c, i) => {
@@ -697,19 +752,15 @@ function buildLearnGridSlide(pres, spec, pageNum, total) {
       x, y: CARD_Y, w: CARD_W, h: CARD_H,
       fill: { color: T.bgSecondary }, line: { color: T.divider, width: 1 }
     });
-    // Icon background square
+    // Icon background square (solid accent color)
     slide.addShape("rect", {
       x: x + 0.24, y: CARD_Y + 0.27, w: 0.56, h: 0.56,
-      fill: { color: th.iconBg }, line: { color: T.divider, width: 1 }
+      fill: { color: th.iconBg }, line: { color: th.iconBg, width: 0 }
     });
-    // Icon label (if provided) — native text, renders in all PPTX viewers
-    const iconChar = c.icon ? getIconChar(c.icon) : null;
-    if (iconChar) {
-      slide.addText(iconChar, {
-        x: x + 0.24, y: CARD_Y + 0.27, w: 0.56, h: 0.56,
-        fontSize: 22, fontFace: FONT_BODY, bold: true,
-        color: th.valColor, align: "center", valign: "middle", margin: 0
-      });
+    // Tabler icon PNG (white on colored bg)
+    const iconData = c.icon ? getIcon(c.icon) : null;
+    if (iconData) {
+      slide.addImage({ data: iconData, x: x + 0.32, y: CARD_Y + 0.35, w: 0.40, h: 0.40 });
     }
     slide.addText(c.title || "", {
       x: x + 0.20, y: CARD_Y + 1.00, w: CARD_W - 0.40, h: 0.48,
@@ -868,7 +919,9 @@ function buildClosingSlide(pres, spec) {
 // Main — assemble deck from spec
 // ════════════════════════════════════════════════════════════════════════════
 
-function buildDeck(spec) {
+async function buildDeck(spec) {
+  await preloadIcons();
+
   const pres = new PptxGenJS();
   pres.layout  = "LAYOUT_WIDE";
   pres.author  = spec.author  || "Manulife Sinochem";
@@ -1081,7 +1134,7 @@ async function main() {
   }
 
   console.log(`ℹ Generating: ${outputFile}`);
-  const pres = buildDeck(spec);
+  const pres = await buildDeck(spec);
 
   await pres.writeFile({ fileName: outputFile });
   console.log(`✓ Saved: ${path.resolve(outputFile)}`);

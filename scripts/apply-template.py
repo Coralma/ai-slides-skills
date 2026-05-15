@@ -8,8 +8,10 @@ Strategy
 1. Open the company template PPTX.
 2. Fill its cover slide (slide 1) placeholders with title / subtitle / date.
 3. Copy content slides from a PptxGenJS-generated PPTX, scaling all shape
-   coordinates to match the template's canvas size (EMU rescaling).
-4. Reorder: cover → content slides → template closing slide.
+    coordinates to match the template's canvas size (EMU rescaling). For
+    divider/section slides, use the template's slide 2 "Chapter" layout instead
+    of the generated slide.
+4. Reorder: cover → content/chapter slides → template closing slide.
 5. Delete the original template example slides.
 6. Save as output PPTX.
 
@@ -17,6 +19,7 @@ Template conventions (中宏PPT模版.pptx)
 ----------------------------------------
 - Slide 1  : cover  — placeholders idx=0 (title), idx=1 (subtitle/author),
                        idx=10 (date)
+- Slide 2  : chapter — layout 'Chapter', placeholder idx=0 (chapter title)
 - Slide 11 : closing — layout 'Closing slide', all visuals in layout
 - Slides 2–10 : sample layouts (deleted in output)
 
@@ -116,20 +119,51 @@ def fill_placeholder(slide, ph_idx: int, text: str) -> bool:
     return False
 
 
+def find_chapter_layout(prs: Presentation):
+    """
+    Return the template's chapter layout. The company template uses slide 2 as
+    the canonical chapter-title page, with layout name 'Chapter'.
+    """
+    if len(prs.slides) > 1:
+        return prs.slides[1].slide_layout
+    for layout in prs.slide_layouts:
+        if layout.name.lower() in ("chapter", "章节", "section", "章节标题"):
+            return layout
+    return None
+
+
+def add_template_chapter_slide(dest_prs: Presentation, chapter_layout, spec: dict) -> None:
+    """Append a chapter slide using the company template's slide-2 layout."""
+    slide = dest_prs.slides.add_slide(chapter_layout)
+    title = (
+        spec.get("label")
+        or spec.get("title")
+        or spec.get("heading")
+        or "章节标题"
+    )
+    if not fill_placeholder(slide, 0, str(title)):
+        print("  Warning: chapter title placeholder idx=0 not found")
+
+
 # ── Slide copy ───────────────────────────────────────────────────────────────
 
 def copy_content_slides(
     dest_prs: Presentation,
     src_prs:  Presentation,
     src_indices: list[int],
-) -> int:
+    slide_specs: list[dict] | None = None,
+    chapter_layout=None,
+) -> tuple[int, int]:
     """
     Append scaled copies of slides (at src_indices) from src_prs to dest_prs.
 
     Each slide's <p:spTree> and <p:bg> are deep-copied from the source,
     then all EMU coordinates are scaled to fit the destination canvas.
 
-    Returns the number of slides added.
+    Divider slides are replaced with the company template's slide 2 Chapter
+    layout when spec metadata is available.
+
+    Returns (slides_added, chapter_slides_replaced).
     """
     sx = dest_prs.slide_width.emu  / src_prs.slide_width.emu
     sy = dest_prs.slide_height.emu / src_prs.slide_height.emu
@@ -144,7 +178,16 @@ def copy_content_slides(
         # Fall back to the last layout
         blank_layout = dest_prs.slide_layouts[-1]
 
+    slide_specs = slide_specs or []
+    chapter_count = 0
+
     for idx in src_indices:
+        slide_spec = slide_specs[idx] if idx < len(slide_specs) else {}
+        if slide_spec.get("type") == "divider" and chapter_layout is not None:
+            add_template_chapter_slide(dest_prs, chapter_layout, slide_spec)
+            chapter_count += 1
+            continue
+
         src_slide = src_prs.slides[idx]
         new_slide  = dest_prs.slides.add_slide(blank_layout)
 
@@ -178,7 +221,7 @@ def copy_content_slides(
                 else:
                     dst_cSld.insert(0, new_bg)
 
-    return len(src_indices)
+    return len(src_indices), chapter_count
 
 
 # ── Slide order management ───────────────────────────────────────────────────
@@ -229,6 +272,7 @@ def main() -> None:
     args = ap.parse_args()
 
     # ── Read spec (optional) ─────────────────────────────────────────────────
+    slides_spec = []
     if args.spec:
         spec = json.loads(Path(args.spec).read_text(encoding="utf-8"))
         slides_spec = spec.get("slides", [])
@@ -249,6 +293,7 @@ def main() -> None:
     # ── Open source files ────────────────────────────────────────────────────
     tpl = Presentation(args.template)
     src = Presentation(args.input)
+    chapter_layout = find_chapter_layout(tpl)
     n_tpl = len(tpl.slides)
     n_src = len(src.slides)
 
@@ -277,8 +322,16 @@ def main() -> None:
     print(f"ℹ Copying  : input slides {[i + 1 for i in content_indices]}")
 
     # ── Copy content slides (appended to end of tpl) ─────────────────────────
-    n_added = copy_content_slides(tpl, src, content_indices)
+    n_added, n_chapters = copy_content_slides(
+        tpl,
+        src,
+        content_indices,
+        slide_specs=slides_spec,
+        chapter_layout=chapter_layout,
+    )
     print(f"ℹ Added    : {n_added} content slides  (total now {len(tpl.slides)})")
+    if n_chapters:
+        print(f"ℹ Chapter  : replaced {n_chapters} divider slide(s) with template slide 2")
 
     # ── Reorder ──────────────────────────────────────────────────────────────
     # Current layout in tpl:

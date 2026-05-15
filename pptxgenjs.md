@@ -22,7 +22,77 @@ Slide dimensions (coordinates in inches):
 - `LAYOUT_16x9`: 10" × 5.625" (default)
 - `LAYOUT_16x10`: 10" × 6.25"
 - `LAYOUT_4x3`: 10" × 7.5"
-- `LAYOUT_WIDE`: 13.3" × 7.5"
+- `LAYOUT_WIDE`: 13.33" × 7.5" for the 中宏PPT模版 canvas
+
+---
+
+## 中宏PPT模版 Generation Rules
+
+For Manulife-Sinochem decks, always generate a native PPTX from JSON via:
+
+```bash
+bash scripts/build-with-template.sh <spec.json> <output.pptx>
+```
+
+This pipeline uses `generate-pptx.js` for editable content slides, then `apply-template.py` merges the result into `中宏PPT模版.pptx`.
+
+### Canvas & Safe Zones
+
+Use `pres.layout = "LAYOUT_WIDE"` and design on a 13.33" × 7.50" canvas.
+
+Template-derived constants:
+
+| Constant | Value | Meaning |
+|---|---:|---|
+| `W` | `13.33` | slide width |
+| `H` | `7.50` | slide height |
+| `MX` | `0.51` | left/right content margin |
+| `TY` | `0.52` | title placeholder top |
+| `TH` | `0.87` | title placeholder height |
+| `CY` | `1.65` | content area top |
+| `CEND` | `6.50` | content area bottom, above template logo |
+| `CW` | `12.31` | usable content width |
+| `CH` | `4.85` | usable content height |
+
+Title placeholders on standard content pages are at `x=0.51`, `y=0.52`, `w=12.33`, `h=0.87`. Do not place content below `y=6.50`; the template logo/footer occupies the lower band.
+
+### Template Page Library
+
+The company template has 12 pages. Use these as the visual vocabulary for JSON spec design and PptxGenJS layout decisions.
+
+| Page | Layout / archetype | Template geometry | Current spec mapping |
+|---:|---|---|---|
+| 1 | `Title slide with subtitle` cover | Placeholders: title `idx=0`, subtitle/author `idx=1`, date `idx=10` | `title`; filled by `apply-template.py` |
+| 2 | `Chapter` section title | Title placeholder `x=0.48`, `y=2.49`, `w=11.15`, `h=1.94` | `divider`; final PPTX uses this page |
+| 3 | two-point split | Two blocks: left `x=1.43`, right `x=7.33`, `w≈4.56`; numbered circles around `y=2.07`; center rule at `x=6.66` | `two-col-list` / `two-col` |
+| 4 | two stacked sections | Number boxes at `x=1.34`; text bands at `x=2.32`, `w=9.84`; rows start near `y=1.68` and `y=4.38` | `findings` with 2 items or `content` with 2 sections |
+| 5 | left image + three right points | Image `x=0.38`, `y=2.05`, `w=4.10`, `h=4.10`; right items start at `x=5.00` | `learn-grid` / `findings` with 3 items; add images only when assets exist |
+| 6 | three numbered rows | Number boxes at `x≈1.42`; text bands at `x=2.40`, `w=9.84`; row tops `1.67`, `3.42`, `5.17` | `findings` with 3 items |
+| 7 | central visual + three callouts | Visual/rings on left `x≈0.76`; callout labels around `x=4.30`; descriptions at `x≈6.58` | `callout-grid` / `learn-grid` with 3 cards |
+| 8 | four quadrant cards | Cards at `x=0.75/6.96`, `y=1.24/4.03`, `w=5.61`, `h=2.39` | `rec-grid` with 4 items |
+| 9 | five-step horizontal process | Step circles along `y≈2.4–3.5`; five text columns `w≈2.05`; connectors between steps | `content` with 5 numbered bullets; split if verbose |
+| 10 | six-step path | Six circles along `y=3.80`; top cards at steps 1/3/5, bottom cards at 2/4/6 | `content` with 6 short bullets or multiple `findings` slides |
+| 11 | horizontal timeline | Main line at `y=4.38`; milestone text alternates above/below line | `chart` for numeric trend, otherwise `content` with dated milestones |
+| 12 | `Closing slide` | Visuals are in the closing layout | `closing`; final PPTX keeps template closing |
+
+### Spec Type Selection
+
+When writing `spec.json`, choose the closest template archetype first:
+
+| Content need | Preferred supported type | Template page reference |
+|---|---|---|
+| Cover | `title` | page 1 |
+| Section divider | `divider` | page 2 |
+| Two options / contrast | `two-col-list` or `two-col` | page 3 |
+| 2–3 findings | `findings` | pages 4 / 6 |
+| Image plus 3 points | `learn-grid` or `findings` | page 5 |
+| Three strategic callouts | `callout-grid` or `learn-grid` | page 7 |
+| Four recommendations / modules | `rec-grid` | page 8 |
+| Five or six sequential steps | `content` with numbered bullets, or split | pages 9 / 10 |
+| Dated roadmap / trend | `chart` if numeric, otherwise `content` | page 11 |
+| Closing | `closing` | page 12 |
+
+Extra spec fields are ignored by `generate-pptx.js`, so do not invent unsupported `type` values unless the generator has been updated. Use existing supported types and keep the layout close to the template page library.
 
 ---
 
@@ -197,33 +267,44 @@ slide.addImage({ path: "image.png", x: centerX, y: 1.2, w: calcWidth, h: maxHeig
 
 ## Icons
 
-Use react-icons to generate SVG icons, then rasterize to PNG for universal compatibility.
+For 中宏 PPTX generation, use Tabler Icons (MIT) from `@tabler/icons`. Convert SVGs to PNG with `sharp` before calling `slide.addImage()`; embedding SVG data URIs directly is not reliable in PowerPoint/WPS.
 
 ### Setup
 
 ```javascript
-const React = require("react");
-const ReactDOMServer = require("react-dom/server");
 const sharp = require("sharp");
-const { FaCheckCircle, FaChartLine } = require("react-icons/fa");
+const fs = require("fs");
+const path = require("path");
 
-function renderIconSvg(IconComponent, color = "#000000", size = 256) {
-  return ReactDOMServer.renderToStaticMarkup(
-    React.createElement(IconComponent, { color, size: String(size) })
-  );
-}
+const TABLER_DIR = "/opt/homebrew/lib/node_modules/@tabler/icons/icons/outline";
+const TABLER_MAP = {
+  brain: "brain",
+  cpu: "cpu",
+  "shield-check": "shield-check",
+  "bar-chart-2": "chart-bar",
+  shield: "shield",
+  zap: "bolt",
+  users: "users",
+  monitor: "device-desktop",
+  briefcase: "briefcase",
+  globe: "world",
+  calendar: "calendar",
+  "arrow-right": "arrow-right",
+};
 
-async function iconToBase64Png(IconComponent, color, size = 256) {
-  const svg = renderIconSvg(IconComponent, color, size);
-  const pngBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
-  return "image/png;base64," + pngBuffer.toString("base64");
+async function tablerIconToPng(iconName, colorHex = "FFFFFF", size = 64) {
+  const file = path.join(TABLER_DIR, `${TABLER_MAP[iconName] || iconName}.svg`);
+  let svg = fs.readFileSync(file, "utf8");
+  svg = svg.replace(/currentColor/g, `#${colorHex}`);
+  const pngBuffer = await sharp(Buffer.from(svg)).resize(size, size).png().toBuffer();
+  return "data:image/png;base64," + pngBuffer.toString("base64");
 }
 ```
 
 ### Add Icon to Slide
 
 ```javascript
-const iconData = await iconToBase64Png(FaCheckCircle, "#4472C4", 256);
+const iconData = await tablerIconToPng("shield-check", "FFFFFF", 64);
 
 slide.addImage({
   data: iconData,
@@ -231,17 +312,16 @@ slide.addImage({
 });
 ```
 
-**Note**: Use size 256 or higher for crisp icons. The size parameter controls the rasterization resolution, not the display size on the slide (which is set by `w` and `h` in inches).
+**Note**: Use white icons on solid 中宏 green/navy accent squares for stronger contrast and a closer match to the template's flat visual style. The raster size controls image quality; the displayed size is set by `w` and `h` in inches.
 
 ### Icon Libraries
 
-Install: `npm install -g react-icons react react-dom sharp`
+Install: `npm install -g @tabler/icons sharp`
 
-Popular icon sets in react-icons:
-- `react-icons/fa` - Font Awesome
-- `react-icons/md` - Material Design
-- `react-icons/hi` - Heroicons
-- `react-icons/bi` - Bootstrap Icons
+Supported icon keys in `generate-pptx.js`:
+- `brain`, `cpu`, `shield-check`, `bar-chart-2`
+- `shield`, `zap`, `users`, `monitor`
+- `briefcase`, `globe`, `calendar`, `arrow-right`
 
 ---
 

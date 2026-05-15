@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # scripts/build-with-template.sh
-# Generate a PPTX with the company template applied to cover + closing slides.
+# Generate a PPTX with the company template applied to cover, chapter + closing slides.
 #
 # Usage:
 #   bash scripts/build-with-template.sh <spec.json> [output.pptx] [template.pptx]
@@ -16,10 +16,11 @@
 #        a. Opens the company template PPTX
 #        b. Fills the template cover slide (slide 1) with title/subtitle/date
 #           from the spec
-#        c. Copies content slides (skipping PptxGenJS title + closing) and
-#           scales coordinates to match the template canvas (13.33" × 7.5")
-#        d. Keeps the template closing slide (slide 11)
-#        e. Deletes the 9 original template example slides
+#        c. Copies content slides (skipping PptxGenJS title + closing), replacing
+#           divider slides with the template slide 2 Chapter layout
+#        d. Scales copied content coordinates to the template canvas (13.33" × 7.5")
+#        e. Keeps the template closing slide
+#        f. Deletes the original template example slides
 #   3. Saves the final merged PPTX
 set -euo pipefail
 
